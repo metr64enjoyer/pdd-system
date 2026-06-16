@@ -4,8 +4,9 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-supersecret123')
-DEBUG = False
+DEBUG = True
 ALLOWED_HOSTS = ["*"]
+CSRF_TRUSTED_ORIGINS = ['https://pdd-system.up.railway.app']
 
 INSTALLED_APPS = [
     "django.contrib.admin",
