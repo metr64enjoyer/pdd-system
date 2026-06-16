@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}ML-анализ ДТП{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h4 class="mb-3">ML-анализ ДТП по школам</h4>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">Параметры анализа</div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <label class="form-label small">Школа</label>
+                        <select id="mlSchool" class="form-select form-select-sm">
+                            <option value="">-- Выберите школу --</option>
+                            {% for org in all_schools %}
+                                <option value="{{ org.id }}">{{ org.name|truncatechars:35 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small">Радиус</label>
+                            <select id="mlRadius" class="form-select form-select-sm">
+                                <option value="300">300 м</option>
+                                <option value="500" selected>500 м</option>
+                                <option value="1000">1 км</option>
+                                <option value="2000">2 км</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">Год</label>
+                            <select id="mlYear" class="form-select form-select-sm">
+                                <option value="">Все годы</option>
+                                {% for year in years %}
+                                    <option value="{{ year }}">{{ year }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <button id="mlAnalyzeBtn" class="btn btn-primary btn-sm w-100">Анализировать</button>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div id="mlResult">
+                <div class="text-muted text-center py-5">Выберите школу и нажмите "Анализировать"</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('mlAnalyzeBtn').addEventListener('click', function() {
+    var schoolId = document.getElementById('mlSchool').value;
+    var radius = document.getElementById('mlRadius').value;
+    var year = document.getElementById('mlYear').value;
+    
+    if (!schoolId) { alert('Выберите школу'); return; }
+    
+    var btn = this;
+    btn.disabled = true; btn.innerHTML = 'Анализ...';
+    
+    fetch('/api/school-analysis/?school_id=' + schoolId + '&radius=' + radius + '&year=' + year)
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('mlResult').innerHTML = '<div class="alert alert-danger">' + data.error + '</div>';
+                return;
+            }
+            var html = '<div class="card"><div class="card-header">' + data.school_name + '</div><div class="card-body">';
+            html += '<p>ДТП за ' + (year || 'все годы') + ' в радиусе ' + radius + ' м: <strong>' + data.total_accidents + '</strong></p>';
+            html += '<p>Опасность: <strong>' + data.danger_level_name + '</strong></p>';
+            html += '<p>Легких: ' + data.severity_count.light + ' | Тяжелых: ' + data.severity_count.heavy + ' | Смертельных: ' + data.severity_count.fatal + '</p>';
+            html += '<p><strong>Рекомендация:</strong> ' + data.recommendation.name + '</p>';
+            html += '<p>' + data.recommendation.reason + '</p>';
+            
+            if (data.categories.length) {
+                html += '<table class="table table-sm mt-2"><thead><tr><th>Категория</th><th>Кол-во</th><th>%</th></tr></thead><tbody>';
+                data.categories.forEach(function(c) {
+                    html += '<tr><td>' + c.name + '</td><td>' + c.count + '</td><td>' + c.percent + '%</td></tr>';
+                });
+                html += '</tbody></table>';
+            }
+            
+            if (data.accidents_list && data.accidents_list.length) {
+                html += '<p class="mt-3"><strong>Ближайшие ДТП:</strong></p>';
+                html += '<table class="table table-sm"><thead><tr><th>Дата</th><th>Описание</th><th>Адрес</th><th>Тяжесть</th><th>Расст.</th></tr></thead><tbody>';
+                data.accidents_list.forEach(function(a) {
+                    var addr = a.address || (a.lat ? a.lat.toFixed(4) + ', ' + a.lng.toFixed(4) : '—');
+                    html += '<tr><td style="white-space:nowrap">' + a.date + '</td><td>' + (a.title || '').substring(0, 50) + '</td><td style="max-width:150px;word-wrap:break-word">' + addr.substring(0, 30) + '</td><td>' + a.severity + '</td><td>' + a.distance + ' м</td></tr>';
+                });
+                html += '</tbody></table>';
+            }
+            
+            html += '</div></div>';
+            document.getElementById('mlResult').innerHTML = html;
+        })
+        .catch(function(err) {
+            document.getElementById('mlResult').innerHTML = '<div class="alert alert-danger">Ошибка сервера</div>';
+        })
+        .finally(function() {
+            btn.disabled = false; btn.innerHTML = 'Анализировать';
+        });
+});
+</script>
+{% endblock %}

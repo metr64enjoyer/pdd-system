@@ -1,0 +1,232 @@
+{% extends 'admin_base.html' %}
+
+{% block admin_title %}Приглашения сотрудников{% endblock %}
+
+{% block admin_content %}
+<div class="row">
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header">
+                <h5>Создать токен приглашения</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="createTokenForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Количество использований</label>
+                        <input type="number" name="max_uses" class="form-control" value="1" min="1" max="100" required>
+                        <small class="text-muted">Сколько сотрудников смогут зарегистрироваться по этой ссылке</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Создать токен</button>
+                </form>
+                
+                {% if generated_link %}
+                <div class="alert alert-success mt-3">
+                    <strong>Ссылка для регистрации сотрудников:</strong>
+                    <input type="text" class="form-control mt-2" id="inviteLink" value="{{ generated_link }}" readonly>
+                    <button class="btn btn-sm btn-outline-secondary mt-2" onclick="copyToClipboard()">Копировать ссылку</button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>Активные токены</h5>
+                <button id="deleteSelectedBtn" class="btn btn-danger btn-sm" disabled>Удалить выбранные</button>
+            </div>
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th class="checkbox-cell">
+                                <span id="selectAllContainer" style="display: none;">
+                                    <input type="checkbox" id="selectAllCheckbox" class="select-all-checkbox">
+                                </span>
+                            </th>
+                            <th>Токен</th>
+                            <th>Ссылка</th>
+                            <th>Использовано</th>
+                            <th>Доступно</th>
+                            <th>Создан</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inv in invitations %}
+                        <tr class="invitation-row" data-id="{{ inv.id }}">
+                            <td class="checkbox-cell">
+                                <input type="checkbox" class="row-checkbox" value="{{ inv.id }}">
+                            </td>
+                            <td>{{ inv.token|slice:":16" }}...</td>
+                            <td>
+                                <input type="text" class="form-control form-control-sm" value="{{ request.scheme }}://{{ request.get_host }}/register/invite/{{ inv.token }}/" readonly style="font-size: 11px;">
+                                <button class="btn btn-sm btn-outline-secondary mt-1 copy-link-btn" data-link="{{ request.scheme }}://{{ request.get_host }}/register/invite/{{ inv.token }}/">Копировать</button>
+                            </td>
+                            <td>{{ inv.used_count }} / {{ inv.max_uses }}</td>
+                            <td>{% if inv.is_valid %}Активен{% else %}Исчерпан{% endif %}</td>
+                            <td>{{ inv.created_at|date:"d.m.Y H:i" }}</td>
+                        </tr>
+                        {% empty %}
+
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Пагинация -->
+            {% if page_obj.has_other_pages %}
+            <div class="card-footer bg-white">
+                <nav>
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                ← Назад
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">← Назад</span></li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                Вперёд →
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">Вперёд →</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedIds = new Set();
+    const selectAllContainer = document.getElementById('selectAllContainer');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+
+    function copyToClipboard() {
+        const linkInput = document.getElementById('inviteLink');
+        if (linkInput) {
+            linkInput.select();
+            document.execCommand('copy');
+            alert('Ссылка скопирована');
+        }
+    }
+
+    function updateSelectAllContainer() {
+        const anyChecked = document.querySelectorAll('.row-checkbox:checked').length > 0;
+        if (selectAllContainer) {
+            selectAllContainer.style.display = anyChecked ? 'inline' : 'none';
+        }
+    }
+
+    function updateDeleteButton() {
+        const anyChecked = document.querySelectorAll('.row-checkbox:checked').length > 0;
+        const deleteBtn = document.getElementById('deleteSelectedBtn');
+        if (deleteBtn) {
+            deleteBtn.disabled = !anyChecked;
+        }
+        updateSelectAllContainer();
+    }
+
+    document.querySelectorAll('.row-checkbox').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const id = parseInt(this.value);
+            const row = this.closest('.invitation-row');
+            if (this.checked) {
+                selectedIds.add(id);
+                row.classList.add('selected');
+            } else {
+                selectedIds.delete(id);
+                row.classList.remove('selected');
+            }
+            updateDeleteButton();
+        });
+    });
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const allCheckboxes = document.querySelectorAll('.row-checkbox');
+            allCheckboxes.forEach(cb => {
+                cb.checked = this.checked;
+                const row = cb.closest('.invitation-row');
+                const id = parseInt(cb.value);
+                if (this.checked) {
+                    selectedIds.add(id);
+                    row.classList.add('selected');
+                } else {
+                    selectedIds.delete(id);
+                    row.classList.remove('selected');
+                }
+            });
+            updateDeleteButton();
+        });
+    }
+
+    document.getElementById('deleteSelectedBtn')?.addEventListener('click', function() {
+        if (selectedIds.size === 0) {
+            alert('Выберите хотя бы один токен');
+            return;
+        }
+        const selected = Array.from(selectedIds);
+        if (confirm(`Удалить ${selected.length} токенов?`)) {
+            fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ ids: selected, action: 'delete_selected' })
+            }).then(response => response.json()).then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Ошибка удаления');
+                }
+            });
+        }
+    });
+
+    document.querySelectorAll('.copy-link-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const link = this.dataset.link;
+            navigator.clipboard.writeText(link);
+            alert('Ссылка скопирована');
+        });
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}

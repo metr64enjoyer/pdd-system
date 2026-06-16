@@ -1,0 +1,182 @@
+{% extends 'base_auth.html' %}
+{% load static %}
+
+{% block title %}Регистрация — ПДД Система{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center min-vh-100 align-items-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold">Регистрация</h2>
+                        <p class="text-muted">Введите ИНН — остальное подгрузится автоматически</p>
+                    </div>
+
+                    <form method="post" id="registerForm">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Фамилия *</label>
+                                <input type="text" name="last_name" class="form-control" required placeholder="Иванов">
+                                {% if form.last_name.errors %}
+                                <div class="text-danger small">{{ form.last_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Имя *</label>
+                                <input type="text" name="first_name" class="form-control" required placeholder="Иван">
+                                {% if form.first_name.errors %}
+                                <div class="text-danger small">{{ form.first_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Отчество</label>
+                            <input type="text" name="patronymic" class="form-control" placeholder="Иванович">
+                            {% if form.patronymic.errors %}
+                            <div class="text-danger small">{{ form.patronymic.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Логин *</label>
+                            <input type="text" name="username" class="form-control" required
+                                placeholder="Введите логин">
+                            {% if form.username.errors %}
+                            <div class="text-danger small">{{ form.username.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Email *</label>
+                            <input type="email" name="email" class="form-control" required
+                                placeholder="example@mail.ru">
+                            {% if form.email.errors %}
+                            <div class="text-danger small">{{ form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">ИНН организации *</label>
+                            <div class="input-group">
+                                <input type="text" name="inn" id="id_inn" class="form-control" required
+                                    placeholder="10 или 12 цифр" maxlength="12">
+                                <button type="button" id="searchBtn" class="btn btn-primary">
+                                    Найти
+                                </button>
+                            </div>
+                            <div id="searchResult" class="mt-2" style="display: none;">
+                                <div class="alert" id="orgInfo"></div>
+                            </div>
+                            <small class="text-muted">Введите 10 или 12 цифр ИНН</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Контактный телефон</label>
+                            <input type="text" name="phone" class="form-control" placeholder="+7 (XXX) XXX-XX-XX">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Ваша должность</label>
+                            <input type="text" name="position" class="form-control"
+                                placeholder="Например: Директор, Инспектор">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Название ЮИД-отряда</label>
+                            <input type="text" name="yuid_name" class="form-control" placeholder="Например: Светофор">
+                            <small class="text-muted">Если в вашей организации есть отряд ЮИД</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Пароль *</label>
+                            <input type="password" name="password1" class="form-control" required placeholder="Введите пароль" autocomplete="off">
+                            {% if form.password1.errors %}
+                            <div class="text-danger small">{{ form.password1.errors }}</div>
+                            {% endif %}
+                            <small class="text-muted">Минимум 8 символов</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Подтверждение пароля *</label>
+                            <input type="password" name="password2" class="form-control" required placeholder="Повторите пароль" autocomplete="off">
+                            {% if form.password2.errors %}
+                            <div class="text-danger small">{{ form.password2.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                            Зарегистрироваться
+                        </button>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <p class="mb-0">Уже есть аккаунт? <a href="{% url 'login' %}"
+                                class="text-decoration-none">Войти</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    document.getElementById('searchBtn')?.addEventListener('click', async function () {
+        const inn = document.getElementById('id_inn').value.trim();
+        if (!inn) return alert('Введите ИНН');
+        if (inn.length !== 10 && inn.length !== 12) return alert('ИНН должен содержать 10 или 12 цифр');
+
+        this.disabled = true;
+        this.innerHTML = 'Поиск...';
+
+        try {
+            const resp = await fetch('/api/search-by-inn/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: JSON.stringify({ inn: inn })
+            });
+            const data = await resp.json();
+            const resultDiv = document.getElementById('searchResult');
+            const infoDiv = document.getElementById('orgInfo');
+
+            if (data.found) {
+                resultDiv.style.display = 'block';
+                infoDiv.innerHTML = `<strong>Организация найдена:</strong> ${data.name}`;
+                infoDiv.classList.add('alert-success');
+                infoDiv.classList.remove('alert-danger');
+            } else {
+                resultDiv.style.display = 'block';
+                infoDiv.innerHTML = '<strong>Организация не найдена</strong><br>Проверьте правильность ИНН';
+                infoDiv.classList.add('alert-danger');
+                infoDiv.classList.remove('alert-success');
+            }
+        } catch (error) {
+            alert('Ошибка при поиске');
+        } finally {
+            this.disabled = false;
+            this.innerHTML = 'Найти';
+        }
+    });
+</script>
+{% endblock %}

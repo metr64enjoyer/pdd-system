@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}Админ-панель - {% block admin_title %}{% endblock %}{% endblock %}
+
+{% block content %}
+<div style="display: flex; margin: -20px -20px 0 -20px; min-height: calc(100vh - 70px);">
+    <!-- Левая панель -->
+    <div style="width: 250px; background: white; border-right: 1px solid #e9ecef; padding: 20px 0;">
+        
+        <nav style="display: flex; flex-direction: column;">
+            <a href="{% url 'admin_dashboard' %}" class="admin-nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">Главная</a>
+            <a href="{% url 'admin_schools' %}" class="admin-nav-link {% if request.resolver_match.url_name == 'admin_schools' %}active{% endif %}">Организации</a>
+            <a href="{% url 'admin_users' %}" class="admin-nav-link {% if request.resolver_match.url_name == 'admin_users' %}active{% endif %}">Пользователи</a>
+            <a href="{% url 'admin_events' %}" class="admin-nav-link {% if request.resolver_match.url_name == 'admin_events' %}active{% endif %}">Мероприятия</a>
+            <a href="{% url 'admin_accidents' %}" class="admin-nav-link {% if request.resolver_match.url_name == 'admin_accidents' %}active{% endif %}">ДТП</a>
+            <a class="admin-nav-link" href="{% url 'admin_invitations' %}">Приглашения</a>
+        </nav>
+    </div>
+    
+    <!-- Правая часть (контент) -->
+    <div style="flex: 1; padding: 20px; background: #f0f2f5;">
+        {% block admin_content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}

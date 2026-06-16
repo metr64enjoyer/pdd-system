@@ -1,0 +1,325 @@
+{% extends 'admin_base.html' %}
+
+{% block admin_title %}Пользователи{% endblock %}
+
+{% block admin_content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">Добавить пользователя</button>
+            <button id="deleteSelectedBtn" class="btn btn-danger btn-sm ms-2">Удалить выбранные</button>
+        </div>
+        <form method="get" class="d-flex gap-1">
+            <select name="user_type" class="form-select form-select-sm" style="width:150px;" onchange="this.form.submit()">
+                <option value="">Все типы</option>
+                <option value="organization" {% if user_type_filter == 'organization' %}selected{% endif %}>Организация</option>
+                <option value="propaganda" {% if user_type_filter == 'propaganda' %}selected{% endif %}>Сотрудник ГИБДД</option>
+            </select>
+            <input type="text" name="search" class="form-control form-control-sm" placeholder="Поиск по ФИО или логину" value="{{ search }}">
+            <button type="submit" class="btn btn-outline-secondary btn-sm">Найти</button>
+            <a href="{% url 'admin_users' %}" class="btn btn-outline-secondary btn-sm">Сброс</a>
+        </form>
+    </div>
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th class="checkbox-cell">
+                        <span id="selectAllContainer" style="display: none;">
+                            <input type="checkbox" id="selectAllCheckbox" class="select-all-checkbox">
+                        </span>
+                    </th>
+                    <th class="sort-header" data-sort="id">ID <span class="sort-icon">{% if request.GET.sort == 'id' %}&#9650;{% elif request.GET.sort == '-id' %}&#9660;{% else %}&#9660;{% endif %}</span></th>
+                    <th>ФИО</th>
+                    <th>Логин</th>
+                    <th>Email</th>
+                    <th>Тип</th>
+                    <th>Организация</th>
+                    <th>ЮИД отряд</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for profile in profiles %}
+                <tr class="user-row" data-id="{{ profile.user.id }}" data-username="{{ profile.user.username }}" data-last_name="{{ profile.user.last_name }}" data-first_name="{{ profile.user.first_name }}" data-patronymic="{{ profile.patronymic|default:'' }}" data-email="{{ profile.user.email }}" data-user_type="{{ profile.user_type }}" data-organization_id="{{ profile.organization.id|default:'' }}" data-yuid_name="{{ profile.yuid_name|default:'' }}" data-phone="{{ profile.phone|default:'' }}">
+                    <td class="checkbox-cell">
+                        <input type="checkbox" class="row-checkbox" value="{{ profile.user.id }}">
+                    </td>
+                    <td>{{ profile.user.id }}</td>
+                    <td>{{ profile.user.last_name }} {{ profile.user.first_name }} {{ profile.patronymic|default:"" }}</td>
+                    <td>{{ profile.user.username }}</td>
+                    <td>{{ profile.user.email }}</td>
+                    <td>{% if profile.user_type == 'propaganda' %}Сотрудник ГИБДД{% elif profile.user_type == 'admin' %}Администратор{% else %}Организация{% endif %}</td>
+                    <td>{{ profile.organization.name|default:"—"|truncatechars:30 }}</td>
+                    <td>{{ profile.yuid_name|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Пагинация -->
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-white">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        ← Назад
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">← Назад</span></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        Вперёд →
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Вперёд →</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно добавления -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'admin_add_user' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить пользователя</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2"><label>Логин</label><input type="text" name="username" class="form-control" required></div>
+                    <div class="mb-2"><label>Пароль</label><input type="password" name="password" class="form-control" required></div>
+                    <div class="mb-2"><label>Фамилия</label><input type="text" name="last_name" class="form-control"></div>
+                    <div class="mb-2"><label>Имя</label><input type="text" name="first_name" class="form-control"></div>
+                    <div class="mb-2"><label>Отчество</label><input type="text" name="patronymic" class="form-control"></div>
+                    <div class="mb-2"><label>Email</label><input type="email" name="email" class="form-control"></div>
+                    <div class="mb-2">
+                        <label>Тип</label>
+                        <select name="user_type" class="form-select">
+                            <option value="organization">Организация</option>
+                            <option value="propaganda">Сотрудник ГИБДД</option>
+                            <option value="admin">Администратор</option>
+                            <option value="admin" {% if user_type_filter == 'admin' %}selected{% endif %}>Администратор</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label>Организация</label>
+                        <select name="organization_id" class="form-select">
+                            <option value="">Не выбрана</option>
+                            {% for school in schools %}
+                            <option value="{{ school.id }}">{{ school.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-2"><label>ЮИД отряд</label><input type="text" name="yuid_name" class="form-control"></div>
+                    <div class="mb-2"><label>Телефон</label><input type="text" name="phone" class="form-control"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'admin_edit_user' %}" id="editUserForm">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" id="edit_user_id">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редактировать пользователя</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2"><label>Логин</label><input type="text" name="username" id="edit_username" class="form-control" required></div>
+                    <div class="mb-2"><label>Новый пароль</label><input type="password" name="password" class="form-control" placeholder="Оставьте пустым, если не менять"></div>
+                    <div class="mb-2"><label>Фамилия</label><input type="text" name="last_name" id="edit_last_name" class="form-control"></div>
+                    <div class="mb-2"><label>Имя</label><input type="text" name="first_name" id="edit_first_name" class="form-control"></div>
+                    <div class="mb-2"><label>Отчество</label><input type="text" name="patronymic" id="edit_patronymic" class="form-control"></div>
+                    <div class="mb-2"><label>Email</label><input type="email" name="email" id="edit_email" class="form-control"></div>
+                    <div class="mb-2">
+                        <label>Тип</label>
+                        <select name="user_type" id="edit_user_type" class="form-select">
+                            <option value="organization">Организация</option>
+                            <option value="propaganda">Сотрудник ГИБДД</option>
+                            <option value="admin">Администратор</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label>Организация</label>
+                        <select name="organization_id" id="edit_organization_id" class="form-select">
+                            <option value="">Не выбрана</option>
+                            {% for school in schools %}
+                            <option value="{{ school.id }}">{{ school.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-2"><label>ЮИД отряд</label><input type="text" name="yuid_name" id="edit_yuid_name" class="form-control"></div>
+                    <div class="mb-2"><label>Телефон</label><input type="text" name="phone" id="edit_phone" class="form-control"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" id="deleteUserBtn">Удалить</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedIds = new Set();
+    const selectAllContainer = document.getElementById('selectAllContainer');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+
+    function updateSelectAllContainer() {
+        const anyChecked = document.querySelectorAll('.row-checkbox:checked').length > 0;
+        if (selectAllContainer) {
+            selectAllContainer.style.display = anyChecked ? 'inline' : 'none';
+        }
+    }
+
+    function updateDeleteButton() {
+        const anyChecked = document.querySelectorAll('.row-checkbox:checked').length > 0;
+        const deleteBtn = document.getElementById('deleteSelectedBtn');
+        if (deleteBtn) {
+            deleteBtn.disabled = !anyChecked;
+        }
+        updateSelectAllContainer();
+    }
+
+    document.querySelectorAll('.row-checkbox').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const id = parseInt(this.value);
+            const row = this.closest('.user-row');
+            if (this.checked) {
+                selectedIds.add(id);
+                row.classList.add('selected');
+            } else {
+                selectedIds.delete(id);
+                row.classList.remove('selected');
+            }
+            updateDeleteButton();
+        });
+    });
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const allCheckboxes = document.querySelectorAll('.row-checkbox');
+            allCheckboxes.forEach(cb => {
+                cb.checked = this.checked;
+                const row = cb.closest('.user-row');
+                const id = parseInt(cb.value);
+                if (this.checked) {
+                    selectedIds.add(id);
+                    row.classList.add('selected');
+                } else {
+                    selectedIds.delete(id);
+                    row.classList.remove('selected');
+                }
+            });
+            updateDeleteButton();
+        });
+    }
+
+    document.getElementById('deleteSelectedBtn')?.addEventListener('click', function() {
+        if (selectedIds.size === 0) {
+            alert('Выберите хотя бы одну запись');
+            return;
+        }
+        const selected = Array.from(selectedIds);
+        if (confirm(`Удалить ${selected.length} записей?`)) {
+            fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ ids: selected, action: 'delete_selected' })
+            }).then(response => response.json()).then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Ошибка удаления');
+                }
+            });
+        }
+    });
+
+    document.querySelectorAll('.user-row').forEach(row => {
+        row.addEventListener('click', function(e) {
+            if (e.target.type === 'checkbox') return;
+            document.getElementById('edit_user_id').value = this.dataset.id;
+            document.getElementById('edit_username').value = this.dataset.username;
+            document.getElementById('edit_last_name').value = this.dataset.last_name;
+            document.getElementById('edit_first_name').value = this.dataset.first_name;
+            document.getElementById('edit_patronymic').value = this.dataset.patronymic;
+            document.getElementById('edit_email').value = this.dataset.email;
+            document.getElementById('edit_user_type').value = this.dataset.user_type;
+            document.getElementById('edit_organization_id').value = this.dataset.organization_id;
+            document.getElementById('edit_yuid_name').value = this.dataset.yuid_name;
+            document.getElementById('edit_phone').value = this.dataset.phone;
+            new bootstrap.Modal(document.getElementById('editUserModal')).show();
+        });
+    });
+
+    document.getElementById('deleteUserBtn')?.addEventListener('click', function() {
+        if (confirm('Удалить пользователя?')) {
+            document.getElementById('editUserForm').action = "{% url 'admin_delete_user' %}";
+            document.getElementById('editUserForm').submit();
+        }
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    document.querySelectorAll('.sort-header').forEach(function(header) {
+    header.addEventListener('click', function() {
+        var sortField = this.dataset.sort;
+        var currentUrl = new URL(window.location.href);
+        var currentSort = currentUrl.searchParams.get('sort') || '';
+        var newSort = (currentSort === sortField) ? '-' + sortField : sortField;
+        currentUrl.searchParams.set('sort', newSort);
+        window.location.href = currentUrl.toString();
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends 'base_auth.html' %}
+{% load static %}
+
+{% block title %}Вход — ПДД Система{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center min-vh-100 align-items-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold">Вход в систему</h2>
+                        <p class="text-muted">Войдите в свою учетную запись</p>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Логин</label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                            <div class="text-danger small">{{ form.username.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Пароль</label>
+                            <input type="password" name="password" class="form-control" autocomplete="off">
+                            {% if form.password.errors %}
+                            <div class="text-danger small">{{ form.password.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if show_confirmation %}
+                        <div class="mb-3">
+                            <label class="form-label">Код подтверждения (отправлен на {{ email }})</label>
+                            <input type="text" name="confirmation_code" class="form-control" placeholder="6-значный код" maxlength="6">
+                            <small class="text-muted">
+                                <a href="{% url 'resend_code' user_id %}">Отправить код повторно</a>
+                            </small>
+                        </div>
+                        {% endif %}
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                            Войти
+                        </button>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <p class="mb-0">Нет аккаунта? <a href="{% url 'register' %}"
+                                class="text-decoration-none">Зарегистрироваться</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

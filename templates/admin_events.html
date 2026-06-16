@@ -1,0 +1,323 @@
+{% extends 'admin_base.html' %}
+
+{% block admin_title %}Мероприятия{% endblock %}
+
+{% block admin_content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <button id="deleteSelectedBtn" class="btn btn-danger btn-sm">Удалить выбранные</button>
+        </div>
+        <form method="get" class="d-flex gap-1" id="filterForm">
+            <!-- Скрытые поля для сохранения остальных параметров -->
+            <input type="hidden" name="page" value="1">
+            
+            <select name="status" class="form-select form-select-sm" style="width:350px;" onchange="submitWithPreserve('status', this.value)">
+                <option value="">Все статусы</option>
+                <option value="planned" {% if status_filter == 'planned' %}selected{% endif %}>Запланировано</option>
+                <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Подтверждено</option>
+                <option value="conducted" {% if status_filter == 'conducted' %}selected{% endif %}>Проведено</option>
+                <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Отменено</option>
+            </select>
+            
+            <select name="organization" class="form-select form-select-sm" style="width:180px;" onchange="submitWithPreserve('organization', this.value)">
+                <option value="">Все школы</option>
+                {% for org in all_organizations %}
+                <option value="{{ org.id }}" {% if organization_filter == org.id|stringformat:"s" %}selected{% endif %}>{{ org.name|truncatechars:25 }}</option>
+                {% endfor %}
+            </select>
+            
+            <input type="text" name="search" class="form-control form-control-sm" placeholder="Поиск по названию или адресу" value="{{ search }}">
+            <button type="submit" class="btn btn-outline-secondary btn-sm">Найти</button>
+            <a href="{% url 'admin_events' %}" class="btn btn-outline-secondary btn-sm">Сброс</a>
+        </form>
+    </div>
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th class="checkbox-cell">
+                        <span id="selectAllContainer" style="display: none;">
+                            <input type="checkbox" id="selectAllCheckbox" class="select-all-checkbox">
+                        </span>
+                    </th>
+                    <th class="sort-header" data-sort="id">ID <span class="sort-icon">{% if request.GET.sort == 'id' %}&#9650;{% elif request.GET.sort == '-id' %}&#9660;{% else %}&#9660;{% endif %}</span></th>
+                    <th>Название</th>
+                    <th>Школа</th>
+                    <th class="sort-header" data-sort="date">Дата <span class="sort-icon">{% if request.GET.sort == 'date' %}&#9650;{% elif request.GET.sort == '-date' %}&#9660;{% else %}&#9660;{% endif %}</span></th>
+                    <th>Статус</th>
+                    <th>Тип</th>
+                    <th>Район</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                <tr class="event-row" data-id="{{ event.id }}" data-title="{{ event.title }}" data-date="{{ event.date|date:'Y-m-d' }}" data-time="{{ event.time|time:'H:i'|default:'' }}" data-status="{{ event.status }}" data-event_type="{{ event.event_type }}" data-district="{{ event.district|default:'' }}" data-location_address="{{ event.location_address|default:'' }}" data-description="{{ event.description|default:'' }}" data-tags="{{ event.tags|default:'' }}" data-responsible="{{ event.responsible_person|default:'' }}">
+                    <td class="checkbox-cell">
+                        <input type="checkbox" class="row-checkbox" value="{{ event.id }}">
+                    </td>
+                    <td>{{ event.id }}</td>
+                    <td>{{ event.title|truncatechars:40 }}</td>
+                    <td>{{ event.organization.name|truncatechars:30 }}</td>
+                    <td>{{ event.date|date:"d.m.Y" }}</td>
+                    <td class="text-nowrap">
+                        {% if event.status == "conducted" %}
+                            <span class="badge badge-conducted">Проведено</span>
+                        {% elif event.status == "cancelled" %}
+                            <span class="badge badge-cancelled">Отменено</span>
+                        {% elif event.status == "approved" %}
+                            <span class="badge bg-primary">Подтверждено</span>
+                        {% else %}
+                            <span class="badge badge-planned">Запланировано</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ event.get_event_type_display|default:"—" }}</td>
+                    <td>{{ event.district|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Пагинация -->
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-white">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        ← Назад
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">← Назад</span></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        Вперёд →
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Вперёд →</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно редактирования -->
+<div class="modal fade" id="editEventModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" action="{% url 'admin_edit_event' %}" id="editEventForm">
+                {% csrf_token %}
+                <input type="hidden" name="event_id" id="edit_event_id">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редактировать мероприятие</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-2"><label>Название</label><input type="text" name="title" id="edit_title" class="form-control" required></div>
+                        <div class="col-md-3 mb-2"><label>Дата</label><input type="date" name="date" id="edit_date" class="form-control"></div>
+                        <div class="col-md-3 mb-2"><label>Время</label><input type="time" name="time" id="edit_time" class="form-control"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-2">
+                            <label>Статус</label>
+                            <select name="status" id="edit_status" class="form-select">
+                                <option value="planned">Запланировано</option>
+                                <option value="conducted">Проведено</option>
+                                <option value="cancelled">Отменено</option>
+                                <option value="approved">Подтверждено</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label>Тип</label>
+                            <select name="event_type" id="edit_event_type" class="form-select">
+                                <option value="lecture">Лекция / Беседа</option>
+                                <option value="practical">Практическое занятие</option>
+                                <option value="quiz">Викторина / Конкурс</option>
+                                <option value="parent_meeting">Родительское собрание</option>
+                                <option value="briefing">Инструктаж</option>
+                                <option value="action">Акция / Рейд</option>
+                                <option value="excursion">Экскурсия</option>
+                                <option value="training">Тренинг</option>
+                                <option value="other">Иное</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-2"><label>Район</label><input type="text" name="district" id="edit_district" class="form-control"></div>
+                    </div>
+                    <div class="mb-2"><label>Адрес</label><input type="text" name="location_address" id="edit_location_address" class="form-control"></div>
+                    <div class="mb-2"><label>Ответственное лицо</label><input type="text" name="responsible_person" id="edit_responsible_person" class="form-control"></div>
+                    <div class="mb-2"><label>Теги</label><input type="text" name="tags" id="edit_tags" class="form-control" placeholder="через запятую"></div>
+                    <div class="mb-2"><label>Описание</label><textarea name="description" id="edit_description" class="form-control" rows="3"></textarea></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" id="deleteEventBtn">Удалить</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedIds = new Set();
+    const selectAllContainer = document.getElementById('selectAllContainer');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+
+    function updateSelectAllContainer() {
+        const anyChecked = document.querySelectorAll('.row-checkbox:checked').length > 0;
+        if (selectAllContainer) {
+            selectAllContainer.style.display = anyChecked ? 'inline' : 'none';
+        }
+    }
+
+    function updateDeleteButton() {
+        const anyChecked = document.querySelectorAll('.row-checkbox:checked').length > 0;
+        const deleteBtn = document.getElementById('deleteSelectedBtn');
+        if (deleteBtn) {
+            deleteBtn.disabled = !anyChecked;
+        }
+        updateSelectAllContainer();
+    }
+
+    document.querySelectorAll('.row-checkbox').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const id = parseInt(this.value);
+            const row = this.closest('.event-row');
+            if (this.checked) {
+                selectedIds.add(id);
+                row.classList.add('selected');
+            } else {
+                selectedIds.delete(id);
+                row.classList.remove('selected');
+            }
+            updateDeleteButton();
+        });
+    });
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const allCheckboxes = document.querySelectorAll('.row-checkbox');
+            allCheckboxes.forEach(cb => {
+                cb.checked = this.checked;
+                const row = cb.closest('.event-row');
+                const id = parseInt(cb.value);
+                if (this.checked) {
+                    selectedIds.add(id);
+                    row.classList.add('selected');
+                } else {
+                    selectedIds.delete(id);
+                    row.classList.remove('selected');
+                }
+            });
+            updateDeleteButton();
+        });
+    }
+
+    document.getElementById('deleteSelectedBtn')?.addEventListener('click', function() {
+        if (selectedIds.size === 0) {
+            alert('Выберите хотя бы одну запись');
+            return;
+        }
+        const selected = Array.from(selectedIds);
+        if (confirm(`Удалить ${selected.length} записей?`)) {
+            fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ ids: selected, action: 'delete_selected' })
+            }).then(response => response.json()).then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Ошибка удаления');
+                }
+            });
+        }
+    });
+
+    document.querySelectorAll('.event-row').forEach(row => {
+        row.addEventListener('click', function(e) {
+            if (e.target.type === 'checkbox') return;
+            document.getElementById('edit_event_id').value = this.dataset.id;
+            document.getElementById('edit_title').value = this.dataset.title;
+            document.getElementById('edit_date').value = this.dataset.date;
+            document.getElementById('edit_time').value = this.dataset.time;
+            document.getElementById('edit_status').value = this.dataset.status;
+            document.getElementById('edit_event_type').value = this.dataset.event_type;
+            document.getElementById('edit_district').value = this.dataset.district;
+            document.getElementById('edit_location_address').value = this.dataset.location_address;
+            document.getElementById('edit_responsible_person').value = this.dataset.responsible;
+            document.getElementById('edit_tags').value = this.dataset.tags;
+            document.getElementById('edit_description').value = this.dataset.description;
+            new bootstrap.Modal(document.getElementById('editEventModal')).show();
+        });
+    });
+
+    document.getElementById('deleteEventBtn')?.addEventListener('click', function() {
+        if (confirm('Удалить мероприятие?')) {
+            document.getElementById('editEventForm').action = "{% url 'admin_delete_event' %}";
+            document.getElementById('editEventForm').submit();
+        }
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Сохранение параметров при смене выпадающего списка
+    function submitWithPreserve(changedParam, value) {
+        var form = document.getElementById('filterForm');
+        var url = new URL(window.location.href);
+        
+        // Обновляем изменённый параметр
+        if (value) {
+            url.searchParams.set(changedParam, value);
+        } else {
+            url.searchParams.delete(changedParam);
+        }
+        
+        // Сбрасываем страницу на первую
+        url.searchParams.set('page', '1');
+        
+        window.location.href = url.toString();
+    }
+
+    // Очистка скрытого поля page при обычной отправке формы
+    document.getElementById('filterForm').addEventListener('submit', function() {
+        this.querySelector('input[name="page"]').value = '1';
+    });
+</script>
+{% endblock %}

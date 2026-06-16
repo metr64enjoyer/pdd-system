@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Календарь мероприятий{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <div class="calendar-nav">
+                <a href="?year={{ prev_year }}&month={{ prev_month }}" class="calendar-nav-btn">
+                    &larr; {{ prev_month_name }}
+                </a>
+                <div class="month-title-block">
+                    <span class="month-title">{{ month_name_ru }}</span>
+                    <select class="year-select" onchange="changeYear(this.value)">
+                        {% for y in existing_years %}
+                            <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <a href="?year={{ next_year }}&month={{ next_month }}" class="calendar-nav-btn">
+                    {{ next_month_name }} &rarr;
+                </a>
+            </div>
+            <div class="month-buttons">
+                {% for m_num, m_name in months %}
+                    <a href="?year={{ selected_year }}&month={{ m_num }}" 
+                    class="month-btn {% if m_num == selected_month %}active{% endif %}">
+                        {{ m_name }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="calendar-weekdays">
+            <div class="weekday">Пн</div>
+            <div class="weekday">Вт</div>
+            <div class="weekday">Ср</div>
+            <div class="weekday">Чт</div>
+            <div class="weekday">Пт</div>
+            <div class="weekday">Сб</div>
+            <div class="weekday">Вс</div>
+        </div>
+        
+        <div class="calendar-grid">
+            {% for week in calendar_grid %}
+            <div class="calendar-week">
+                {% for day in week %}
+                    {% if day.day == 0 %}
+                        <div class="calendar-day empty"></div>
+                    {% else %}
+                        <div class="calendar-day {% if day.day == today and selected_month == current_month and selected_year == current_year %}today{% endif %}">
+                            <div class="day-number">{{ day.day }}</div>
+                            <div class="events-list">
+                                {% for event in day.events %}
+                                    <div class="event-badge 
+                                        {% if event.status == 'conducted' %}conducted
+                                        {% elif event.status == 'cancelled' %}cancelled
+                                        {% elif event.status == 'approved' %}approved
+                                        {% endif %}" 
+                                        onclick="goToHomeWithEvent({{ event.id }})"
+                                        title="{{ event.title }}{% if is_propaganda and event.organization %} — {{ event.organization.name }}{% endif %}">
+                                        {{ event.title|truncatechars:15 }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function goToHomeWithEvent(eventId) {
+    sessionStorage.setItem('openEventOnMap', eventId);
+    window.location.href = '/';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var eventId = sessionStorage.getItem('openEventOnMap');
+    if (eventId) {
+        sessionStorage.removeItem('openEventOnMap');
+        setTimeout(function() {
+            if (typeof showEventOnMap === 'function') {
+                showEventOnMap(parseInt(eventId));
+            }
+        }, 500);
+    }
+});
+</script>
+{% endblock %}

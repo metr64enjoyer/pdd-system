@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block title %}Отчёт по районам{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h4>Отчёт по районам</h4>
+            <p class="text-muted small mb-0">Количество ДТП и мероприятий с группировкой по районам</p>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Параметры отчёта</div>
+        <div class="card-body">
+            <form method="get">
+                <div class="row mb-2">
+                    <div class="col-md-2">
+                        <label class="form-label small">Год</label>
+                        <select name="year" class="form-select form-select-sm">
+                            <option value="">Все годы</option>
+                            {% for y in available_years %}
+                                <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Месяц</label>
+                        <select name="month" class="form-select form-select-sm">
+                            <option value="">Все месяцы</option>
+                            {% for m_num, m_name in months %}
+                                <option value="{{ m_num }}" {% if m_num == selected_month %}selected{% endif %}>{{ m_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary btn-sm me-2">Сформировать</button>
+                        {% if district_data %}
+                        <a href="?year={{ selected_year }}&month={{ selected_month }}{% for d in selected_districts %}&districts={{ d }}{% endfor %}&export=excel" class="btn btn-success btn-sm">Excel</a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="mt-2">
+                    <label class="form-label small">Районы</label>
+                    <div class="mb-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="selectAll" onclick="toggleAll(this)">
+                            <label class="form-check-label small" for="selectAll"><strong>Выбрать все районы</strong></label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        {% for district in districts_list %}
+                        <div class="col-md-2">
+                            <div class="form-check">
+                                <input class="form-check-input district-check" type="checkbox" name="districts" value="{{ district }}" 
+                                    id="d_{{ forloop.counter }}"
+                                    {% if district in selected_districts %}checked{% endif %}>
+                                <label class="form-check-label small" for="d_{{ forloop.counter }}">{{ district }}</label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                {% if error %}
+                    <div class="alert alert-warning py-1 mt-2 small">{{ error }}</div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    {% if district_data %}
+        <div class="row mb-3">
+            <div class="col-md-6"><div class="card text-center"><div class="card-body"><h3>{{ total_dtp }}</h3><small class="text-muted">Всего ДТП</small></div></div></div>
+            <div class="col-md-6"><div class="card text-center"><div class="card-body"><h3>{{ total_events }}</h3><small class="text-muted">Всего мероприятий</small></div></div></div>
+        </div>
+
+        {% for d in district_data %}
+        <div class="card mb-2">
+            <div class="card-header py-2" style="cursor:pointer;" onclick="toggleDistrict('dist_{{ forloop.counter }}', 'icon-dist-{{ forloop.counter }}')">
+                <div class="row align-items-center">
+                    <div class="col-md-3"><strong>{{ d.district }}</strong></div>
+                    <div class="col-md-2 text-center">ДТП: {{ d.dtp_total }}</div>
+                    <div class="col-md-2 text-center">Тяж: {{ d.dtp_heavy }} | Смерт: {{ d.dtp_fatal }}</div>
+                    <div class="col-md-2 text-center">Меропр: {{ d.events_total }}</div>
+                    <div class="col-md-3 text-end">
+                        <span id="icon-dist-{{ forloop.counter }}">&#9660;</span>
+                    </div>
+                </div>
+            </div>
+            <div id="dist_{{ forloop.counter }}" style="display:none;">
+                <div class="card-body py-2">
+                    <h6 class="mb-1" style="cursor:pointer;" onclick="toggleSection('dtp_{{ forloop.counter }}', 'icon-dtp-{{ forloop.counter }}')">
+                        ДТП ({{ d.dtp_list|length }}) <span id="icon-dtp-{{ forloop.counter }}">&#9660;</span>
+                    </h6>
+                    <div id="dtp_{{ forloop.counter }}">
+                        <table class="table table-sm mb-2">
+                            <thead><tr><th>Дата</th><th>Тип</th><th>Адрес</th><th>Тяжесть</th></tr></thead>
+                            <tbody>
+                                {% for dtp in d.dtp_list %}
+                                <tr>
+                                    <td class="text-nowrap small">{{ dtp.date }}</td>
+                                    <td class="small">{{ dtp.title|truncatechars:50 }}</td>
+                                    <td class="small">{{ dtp.address }}</td>
+                                    <td class="small">
+                                        {% if 'Тяжелое' in dtp.severity or 'Тяжёлое' in dtp.severity %}
+                                            <span class="badge bg-warning text-dark">Тяжелое</span>
+                                        {% elif 'Смертельное' in dtp.severity %}
+                                            <span class="badge bg-danger">Смертельное</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Легкое</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="text-muted small">Нет ДТП</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <h6 class="mb-1" style="cursor:pointer;" onclick="toggleSection('ev_{{ forloop.counter }}', 'icon-ev-{{ forloop.counter }}')">
+                        Мероприятия ({{ d.events_list|length }}) <span id="icon-ev-{{ forloop.counter }}">&#9660;</span>
+                    </h6>
+                    <div id="ev_{{ forloop.counter }}">
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>Дата</th><th>Название</th><th>Тип</th><th>Статус</th></tr></thead>
+                            <tbody>
+                                {% for ev in d.events_list %}
+                                <tr>
+                                    <td class="text-nowrap small">{{ ev.date }}</td>
+                                    <td class="small">{{ ev.title|truncatechars:50 }}</td>
+                                    <td class="small">{{ ev.type }}</td>
+                                    <td class="small">
+                                        {% if 'Проведено' in ev.status %}
+                                            <span class="badge bg-success">{{ ev.status }}</span>
+                                        {% elif 'Запланировано' in ev.status %}
+                                            <span class="badge bg-warning text-dark">{{ ev.status }}</span>
+                                        {% elif 'Отменено' in ev.status %}
+                                            <span class="badge bg-danger">{{ ev.status }}</span>
+                                        {% elif 'Подтверждено' in ev.status %}
+                                            <span class="badge bg-primary">{{ ev.status }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ ev.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="text-muted small">Нет мероприятий</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleAll(source) {
+    var checkboxes = document.querySelectorAll('.district-check');
+    for (var i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = source.checked;
+    }
+}
+
+function toggleDistrict(id, iconId) {
+    var el = document.getElementById(id);
+    var icon = document.getElementById(iconId);
+    if (el.style.display === 'none') {
+        el.style.display = 'block';
+        icon.innerHTML = '&#9650;';
+    } else {
+        el.style.display = 'none';
+        icon.innerHTML = '&#9660;';
+    }
+}
+
+function toggleSection(id, iconId) {
+    var el = document.getElementById(id);
+    var icon = document.getElementById(iconId);
+    if (el.style.display === 'none') {
+        el.style.display = 'block';
+        icon.innerHTML = '&#9650;';
+    } else {
+        el.style.display = 'none';
+        icon.innerHTML = '&#9660;';
+    }
+}
+</script>
+{% endblock %}

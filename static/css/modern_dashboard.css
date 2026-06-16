@@ -1,0 +1,945 @@
+/* ========================================
+   ПДД СИСТЕМА - СОВРЕМЕННЫЙ ДИЗАЙН
+   ======================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #f0f2f5;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Навигация */
+.navbar {
+    background: white !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    padding: 0.5rem 1rem;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #2563eb !important;
+}
+
+.nav-link {
+    color: #4b5563 !important;
+    font-weight: 500;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem !important;
+}
+
+.nav-link:hover {
+    color: #2563eb !important;
+}
+
+/* Основной контейнер */
+.main-container {
+    padding: 0.75rem 1rem;
+}
+
+/* Карточки */
+.card {
+    background: white;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.card-header {
+    background: white;
+    border-bottom: 1px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+/* Таблица */
+.table-wrapper {
+    height: 700px;
+    max-height: 700px;
+    overflow: auto;
+    position: relative;
+}
+
+.table {
+    margin-bottom: 0;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.table thead th {
+    background: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 2px solid #dee2e6 !important;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.table tbody td {
+    vertical-align: middle;
+    font-size: 0.8rem;
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: normal !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    padding: 10px 8px;
+}
+
+.table tbody tr {
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.table tbody tr.selected {
+    background: #e7f1ff;
+    border-left: 2px solid #2563eb;
+}
+
+/* Фиксированная ширина колонок */
+.table th:nth-child(1) { width: 100px; }
+.table th:nth-child(2) { width: 120px; }
+.table th:nth-child(3) { width: auto; }
+.table th:nth-child(4) { width: 150px; }
+.table th:nth-child(5) { width: 120px; }
+.table th:nth-child(6) { width: 110px; }
+.table th:nth-child(7) { width: 150px; }
+
+/* Ячейка мероприятия (3-й столбец) */
+.table td:nth-child(3) {
+    white-space: normal !important;
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+/* Адрес в мероприятии */
+.event-address {
+    font-size: 0.7rem;
+    color: #6c757d;
+    display: inline-block;
+    margin-top: 4px;
+    overflow-wrap: break-word;
+}
+
+/* Бейджи */
+.badge {
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+}
+
+.badge-planned {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.badge-conducted {
+    background: #d4edda;
+    color: #155724;
+}
+
+.badge-cancelled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.badge-category {
+    background: #e9ecef;
+    color: #495057;
+}
+
+/* Иконки действий */
+.action-buttons {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    background: transparent;
+    flex-shrink: 0;
+}
+
+.action-btn i {
+    font-size: 0.9rem;
+}
+
+.action-btn.edit {
+    color: #2563eb;
+}
+
+.action-btn.delete {
+    color: #dc3545;
+}
+
+.action-btn.location {
+    color: #2563eb;
+}
+
+.action-btn:hover {
+    background: #f0f0f0;
+    transform: scale(1.05);
+}
+
+/* Карта */
+.map-card {
+    margin-top: 0;
+}
+
+.map-card .card-body {
+    padding: 0;
+}
+
+#main-map {
+    height: 690px;
+    width: 100%;
+    border-radius: 0 0 12px 12px;
+}
+
+/* Рекомендации */
+.recommendations-card {
+    margin-top: 0.75rem;
+}
+
+.recommendations-card .card-body {
+    padding: 0.75rem;
+}
+
+.recommendations-card .recommendation-text {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+/* Кнопки */
+.btn-primary {
+    background: #2563eb;
+    border: none;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 6px;
+}
+
+.btn-primary:hover {
+    background: #1d4ed8;
+}
+
+/* Фильтр */
+.filter-select {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+/* Модальное окно */
+.modal-content {
+    border-radius: 12px;
+}
+
+.modal-header {
+    padding: 0.75rem 1rem;
+}
+
+.modal-header .modal-title {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.modal-body {
+    padding: 1rem;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.modal-footer {
+    padding: 0.75rem 1rem;
+}
+
+.form-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.form-control,
+.form-select {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+}
+
+/* Скроллбар */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Стили для полей файлов */
+input[type="file"].form-control {
+    padding: 8px 12px;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    background: white;
+}
+
+.text-muted {
+    font-size: 0.7rem;
+    color: #6c757d;
+    display: block;
+    margin-top: 4px;
+}
+
+/* Кнопки в колонке "Отчет" */
+.table .btn-sm-report {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    color: #495057;
+    cursor: pointer;
+}
+
+.table .btn-sm-report:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+    color: #0d6efd;
+}
+
+.table .dropdown-toggle::after {
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+/* Выпадающее меню для файлов - фикс для таблицы */
+.table .dropdown {
+    position: static;
+}
+
+.table .dropdown-menu {
+    min-width: 220px;
+    font-size: 0.8rem;
+    position: fixed;
+    inset: auto auto auto auto;
+    z-index: 9999;
+}
+
+.table .dropdown-item {
+    padding: 6px 14px;
+    font-size: 0.75rem;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 992px) {
+    .table th:nth-child(4), .table td:nth-child(4) { width: 100px; }
+    .table th:nth-child(5), .table td:nth-child(5) { width: 80px; }
+    .table th:nth-child(6), .table td:nth-child(6) { width: 70px; }
+    .table th:nth-child(7), .table td:nth-child(7) { width: 90px; }
+}
+
+@media (max-width: 768px) {
+    .table th:nth-child(4), .table td:nth-child(4) { display: none; }
+    .table th:nth-child(5), .table td:nth-child(5) { display: none; }
+}
+
+/* Заголовки */
+.table th:nth-child(4),
+.table th:nth-child(5) {
+    text-align: center;
+}
+
+/* Ячейки */
+.table td:nth-child(4),
+.table td:nth-child(5) {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Бейджи */
+.table td:nth-child(4) .badge,
+.table td:nth-child(5) .badge {
+    display: inline-block;
+}
+
+/* ========================================
+   КАЛЕНДАРЬ
+   ======================================== */
+
+.calendar-container {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.calendar-header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: white;
+    padding: 20px;
+}
+
+.calendar-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.month-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.calendar-nav-btn {
+    background: rgba(255,255,255,0.2);
+    padding: 8px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: white;
+    display: inline-block;
+    transition: all 0.2s;
+}
+
+.calendar-nav-btn:hover {
+    background: rgba(255,255,255,0.3);
+    color: white;
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: #f8f9fa;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.weekday {
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.85rem;
+}
+
+.calendar-grid {
+    display: flex;
+    flex-direction: column;
+}
+
+.calendar-week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    min-height: 100px;
+}
+
+.calendar-day {
+    border-right: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+    padding: 8px;
+    min-height: 100px;
+    background: white;
+    vertical-align: top;
+    position: relative;
+}
+
+.calendar-day:nth-child(7n) {
+    border-right: none;
+}
+
+.calendar-day.empty {
+    background: #fafbfc;
+}
+
+.calendar-day:hover {
+    background: #f8f9fa;
+}
+
+.day-number {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 6px;
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    text-align: center;
+    border-radius: 50%;
+}
+
+.calendar-day.today {
+    background: #e7f1ff;
+}
+
+.calendar-day.today .day-number {
+    background: #0d6efd;
+    color: white;
+}
+
+.events-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 80px;
+    overflow-y: auto;
+}
+
+.event-badge {
+    background: #0d6efd;
+    color: white;
+    font-size: 0.7rem;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.event-badge:hover {
+    background: #0b5ed7;
+    transform: scale(1.02);
+}
+
+.event-badge.conducted {
+    background: #198754;
+}
+
+.event-badge.conducted:hover {
+    background: #157347;
+}
+
+.event-badge.cancelled {
+    background: #dc3545;
+}
+
+.event-badge.cancelled:hover {
+    background: #bb2d3b;
+}
+
+@media (max-width: 768px) {
+    .calendar-week {
+        min-height: 80px;
+    }
+    .calendar-day {
+        padding: 4px;
+        min-height: 80px;
+    }
+    .day-number {
+        font-size: 0.75rem;
+        width: 22px;
+        height: 22px;
+        line-height: 22px;
+    }
+    .event-badge {
+        font-size: 0.6rem;
+        padding: 2px 4px;
+        white-space: normal;
+        word-break: break-word;
+    }
+    .events-list {
+        max-height: 60px;
+    }
+    .weekday {
+        font-size: 0.7rem;
+        padding: 8px 4px;
+    }
+    .month-title {
+        font-size: 1.2rem;
+    }
+}
+
+.stats-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 20px;
+    margin-bottom: 20px;
+    height: 100%;
+}
+
+.stats-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #0d6efd;
+}
+
+.type-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    background: #e9ecef;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    margin: 3px;
+}
+
+/* ========================================
+   АДМИН-ПАНЕЛЬ
+   ======================================== */
+
+.admin-sidebar {
+    background: white;
+    min-height: 100vh;
+    border-right: 1px solid #e9ecef;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.admin-sidebar .sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.admin-sidebar .sidebar-header h5 {
+    color: #2563eb;
+    font-weight: 700;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.admin-sidebar .sidebar-header small {
+    color: #6c757d;
+    font-size: 0.7rem;
+}
+
+.admin-sidebar .nav-link {
+    color: #4b5563;
+    padding: 10px 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: 0;
+    margin: 2px 0;
+}
+
+.admin-sidebar .nav-link:hover {
+    background: #f8f9fa;
+    color: #2563eb;
+}
+
+.admin-sidebar .nav-link.active {
+    background: #e7f1ff;
+    color: #2563eb;
+    border-left: 3px solid #2563eb;
+}
+
+.admin-header {
+    background: white;
+    padding: 12px 20px;
+    border-bottom: 1px solid #e9ecef;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.admin-header h5 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.admin-content {
+    padding: 20px;
+    background: #f0f2f5;
+    min-height: 100vh;
+}
+
+.admin-nav-link {
+    display: block;
+    padding: 10px 20px;
+    color: #4b5563;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.admin-nav-link:hover {
+    background: #f8f9fa;
+    color: #2563eb;
+}
+
+.admin-nav-link.active {
+    background: #e7f1ff;
+    color: #2563eb;
+    border-left: 3px solid #2563eb;
+}
+
+/* Выпадающие списки */
+select.form-select option {
+    white-space: normal;
+    word-wrap: break-word;
+    word-break: break-word;
+    padding: 8px 12px;
+}
+
+select.form-select {
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+/* Чекбоксы в админ-панели */
+.checkbox-cell {
+    width: 40px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.checkbox-cell .select-all-checkbox,
+.checkbox-cell .row-checkbox {
+    margin: 0 auto;
+    display: block;
+}
+
+.row-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    visibility: hidden;
+}
+
+.school-row:hover .row-checkbox,
+.user-row:hover .row-checkbox,
+.event-row:hover .row-checkbox,
+.accident-row:hover .row-checkbox,
+.invitation-row:hover .row-checkbox {
+    visibility: visible;
+}
+
+.row-checkbox:checked {
+    visibility: visible !important;
+}
+
+.select-all-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.school-row.selected,
+.user-row.selected,
+.event-row.selected,
+.accident-row.selected,
+.invitation-row.selected {
+    background-color: #e7f1ff !important;
+}
+
+.school-row,
+.user-row,
+.event-row,
+.accident-row,
+.invitation-row {
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.school-row:hover,
+.user-row:hover,
+.event-row:hover,
+.accident-row:hover,
+.invitation-row:hover {
+    background-color: #f8f9fa;
+}
+
+#deleteSelectedBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Пагинация */
+.pagination {
+    margin-top: 1rem;
+}
+
+.page-link {
+    color: #2563eb;
+    border: 1px solid #e9ecef;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    margin: 0 2px;
+}
+
+.page-link:hover {
+    background-color: #e7f1ff;
+    color: #1d4ed8;
+}
+
+.page-item.active .page-link {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    color: white;
+}
+
+.page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+}
+
+.event-address {
+    font-size: 0.7rem;
+    color: #6c757d;
+    display: inline-block;
+    margin-top: 4px;
+    overflow-wrap: break-word;
+}
+
+.badge-approved {
+    background: #28a745;
+    color: white;
+}
+
+/* Левая колонка с таблицей */
+.col-lg-7 {
+    display: flex;
+    flex-direction: column;
+}
+
+.col-lg-7 .card:first-child {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.col-lg-7 .card:first-child .card-body,
+.col-lg-7 .card:first-child .table-wrapper {
+    flex: 1;
+}
+
+/* Кнопки месяцев */
+.month-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.month-btn {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #4b5563;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    background: rgba(255,255,255,0.1);
+}
+
+.month-btn:hover {
+    background: rgba(255,255,255,0.2);
+    color: white;
+}
+
+.month-btn.active {
+    background: white;
+    color: #1a1a2e;
+    font-weight: 700;
+}
+
+/* Бейдж подтверждено */
+.event-badge.approved {
+    background: #0d6efd;
+    color: white;
+}
+
+.event-badge.approved:hover {
+    background: #0b5ed7;
+}
+
+.sort-header {
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+}
+.sort-header:hover {
+    background: #e9ecef;
+}
+.sort-icon {
+    font-size: 0.7rem;
+    margin-left: 4px;
+    color: #6c757d;
+}
+
+.month-title-block {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.year-select {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.year-select:hover {
+    background: rgba(255,255,255,0.2);
+    border-color: rgba(255,255,255,0.4);
+}
+
+.year-select option {
+    color: #1a1a2e;
+    background: white;
+    font-weight: 600;
+}
+
+#main-map {
+    height: calc(100vh - 250px) !important;
+}
+
+.col-lg-7 .card:first-child {
+    flex: 1;
+}
+

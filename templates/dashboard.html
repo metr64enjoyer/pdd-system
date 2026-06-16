@@ -1,0 +1,1725 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Отделение пропаганды ГИБДД по Свердловской области{% endblock %}
+
+{% block content %}
+
+<div class="row g-3">
+    <div class="col-lg-7 col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                {% if not is_propaganda %}
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#eventModal">
+                    <i class="bi bi-plus-circle me-1"></i> Новое мероприятие
+                </button>
+                {% endif %}
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="text-muted small">Фильтры:</span>
+                    <select class="filter-select" id="filterStatus">
+                        <option value="all">Все статусы</option>
+                        <option value="planned">Запланировано</option>
+                        <option value="conducted">Проведено</option>
+                        <option value="cancelled">Отменено</option>
+                        <option value="approved">Подтверждено</option>
+                    </select>
+                    <select class="filter-select" id="filterType">
+                        <option value="all">Все типы</option>
+                        <option value="lecture">Лекция / Беседа</option>
+                        <option value="practical">Практическое занятие</option>
+                        <option value="quiz">Викторина / Конкурс</option>
+                        <option value="parent_meeting">Родительское собрание</option>
+                        <option value="briefing">Инструктаж</option>
+                        <option value="action">Акция / Рейд</option>
+                        <option value="excursion">Экскурсия</option>
+                        <option value="training">Тренинг</option>
+                        <option value="other">Иное</option>
+                    </select>
+                    <select class="filter-select" id="filterDistrict">
+                        <option value="all">Все районы</option>
+                        {% for district in districts_list %}
+                            <option value="{{ district }}">{{ district }}</option>
+                        {% endfor %}
+                    </select>
+                    <select class="filter-select" id="filterTags" style="width: 150px;">
+                        <option value="">Все теги</option>
+                        {% for tag in all_tags %}
+                            <option value="{{ tag }}">{{ tag }}</option>
+                        {% endfor %}
+                    </select>
+                    <button id="clearFilters" class="btn btn-sm btn-outline-secondary">Очистить</button>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th class="sort-header" data-sort="created_at">
+                                Дата создания <span class="sort-icon">{% if request.GET.sort == 'created_at' %}&#9650;{% else %}&#9660;{% endif %}</span>
+                            </th>
+                            <th class="sort-header" data-sort="date">
+                                Дата проведения <span class="sort-icon">{% if request.GET.sort == 'date' %}&#9650;{% else %}&#9660;{% endif %}</span>
+                            </th>
+                            <th>Мероприятие</th>
+                            <th>Тип мероприятия</th>
+                            {% if is_propaganda %}<th>Организация</th>{% endif %}
+                            <th>Статус</th>
+                            {% if is_propaganda %}<th class="text-center">Подтверждение</th>{% endif %}
+                            <th class="text-center">Отчет</th>
+                            <th class="text-center">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in events %}
+                        <tr class="event-row" data-id="{{ event.id }}" 
+                            data-created_at="{{ event.created_at|date:'Ymd' }}" 
+                            data-date="{{ event.date|date:'Ymd' }}" 
+                            data-title="{{ event.title|lower }}" 
+                            data-type="{{ event.get_event_type_display|lower }}" 
+                            data-organization="{% if event.organization %}{{ event.organization.name|lower }}{% endif %}" 
+                            data-status="{{ event.get_status_display|lower }}"
+                            data-lat="{{ event.latitude|default:'' }}"
+                            data-lng="{{ event.longitude|default:'' }}"
+                            data-address="{{ event.location_address|default:'' }}"
+                            data-district="{{ event.district|default:'' }}"
+                            data-responsible="{{ event.responsible_person|default:''|lower }}"
+                            data-tags="{{ event.tags|default:''|lower }}">
+                            <td class="text-nowrap">{{ event.created_at|date:"d.m.Y" }}{% if event.created_at%}<br><small class="text-muted">{{ event.created_at|time:"H:i"}}</small>{% endif %}</td>
+                            <td class="text-nowrap">{{ event.date|date:"d.m.Y" }}{% if event.time %}<br><small class="text-muted">{{ event.time|time:"H:i" }}</small>{% endif %}</td>
+                           <td>
+                                <strong>{{ event.title|truncatechars:45 }}</strong>
+                                {% if event.location_address %}
+                                    <br><span class="event-address">{{ event.location_address }}</span>
+                                {% endif %}
+                                {% if event.district %}
+                                    <br><span class="event-address">Район {{ event.district }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-nowrap">{% if event.event_type %}<span class="badge bg-secondary">{{ event.get_event_type_display }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                            {% if is_propaganda %}
+                            <td>
+                                {% if event.organization %}
+                                    <small title="{{ event.organization.name }}" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+                                        {{ event.organization.name }}
+                                    </small>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                            <td class="text-nowrap">
+                                {% if event.status == "conducted" %}
+                                    <span class="badge badge-conducted">Проведено</span>
+                                {% elif event.status == "cancelled" %}
+                                    <span class="badge badge-cancelled">Отменено</span>
+                                {% elif event.status == "approved" %}
+                                    <span class="badge bg-primary">Подтверждено</span>
+                                {% else %}
+                                    <span class="badge badge-planned">Запланировано</span>
+                                {% endif %}
+                            </td>
+                            {% if is_propaganda %}
+                            <td class="text-center" style="width: 120px;">
+                                {% if event.status == 'planned' %}
+                                    <button class="btn btn-sm btn-outline-success approve-event" data-id="{{ event.id }}" style="padding: 2px 8px; font-size: 0.7rem;">
+                                        ✓ Подтвердить
+                                    </button>
+                                {% elif event.status == 'approved' %}
+                                    <span class="badge bg-primary">Подтверждено</span>
+                                {% elif event.status == 'conducted' %}
+                                    <span class="badge bg-secondary">Проведено</span>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                            <td class="text-center">
+                                {% with files=event.report_files.all %}
+                                    {% if files %}
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm-report dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                📎 {{ files|length }}
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                {% for file in files %}
+                                                    <li><a class="dropdown-item" href="{{ file.file.url }}" target="_blank">{{ file.filename }}</a></li>
+                                                {% endfor %}
+                                                {% if event.report_link %}
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li><a class="dropdown-item" href="{{ event.report_link }}" target="_blank">Ссылка на диск</a></li>
+                                                {% endif %}
+                                            </ul>
+                                        </div>
+                                    {% elif event.report_link %}
+                                        <a href="{{ event.report_link }}" class="btn btn-sm-report" target="_blank">Ссылка</a>
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td class="text-center">
+                                <div class="action-buttons">
+                                    <button class="action-btn location" data-lat="{{ event.latitude|default:'' }}"
+                                        data-lng="{{ event.longitude|default:'' }}" data-title="{{ event.title }}"
+                                        data-address="{{ event.location_address|default:'' }}"
+                                        title="Показать на карте"><i class="bi bi-geo-alt"></i></button>
+                                    {% if not is_propaganda %}
+                                    <button class="action-btn edit" data-id="{{ event.id }}" style="display:none;"></button>
+                                    {% endif %}
+                                    <button class="action-btn delete" data-id="{{ event.id }}" title="Удалить"><i class="bi bi-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">Нет мероприятий</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <!-- Пагинация -->
+                {% if page_obj.has_other_pages %}
+                <nav class="mt-3">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?sort={{ request.GET.sort|default:'-created_at' }}&page={{ page_obj.previous_page_number }}">
+                                ← Назад
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">← Назад</span>
+                        </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?sort={{ request.GET.sort|default:'-created_at' }}&page={{ page_obj.previous_page_number }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?sort={{ request.GET.sort|default:'-created_at' }}&page={{ page_obj.previous_page_number }}">
+                                Вперёд →
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Вперёд →</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if not is_propaganda and user.profile.organization %}
+        <div class="card mt-3">
+            <div class="card-header bg-white">
+                Рекомендация мероприятий
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-2">На основе анализа ДТП рядом с вашей школой</p>
+                <input type="hidden" id="mlSchool" value="{{ user.profile.organization.id }}">
+                
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label small">Радиус</label>
+                        <select id="mlRadius" class="form-select form-select-sm">
+                            <option value="300">300 м</option>
+                            <option value="500" selected>500 м</option>
+                            <option value="1000">1 км</option>
+                            <option value="2000">2 км</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small">Год</label>
+                        <select id="mlYear" class="form-select form-select-sm">
+                            <option value="">Все годы</option>
+                            {% for year in accident_years %}
+                                <option value="{{ year }}">{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <button id="mlAnalyzeBtn" class="btn btn-primary btn-sm w-100">
+                    Получить рекомендацию
+                </button>
+                
+                <div id="mlResult" class="mt-3"></div>
+
+                <script>
+                document.getElementById('mlAnalyzeBtn').addEventListener('click', function() {
+                    var schoolId = document.getElementById('mlSchool').value;
+                    var radius = document.getElementById('mlRadius').value;
+                    var year = document.getElementById('mlYear').value;
+                    if (!schoolId) return;
+                    var btn = this; btn.disabled = true; btn.innerHTML = 'Анализ...';
+                    fetch('/api/school-analysis/?school_id=' + schoolId + '&radius=' + radius + '&year=' + year + '&user_type=organization')
+                        .then(r => r.json()).then(data => {
+                            if (data.error) { document.getElementById('mlResult').innerHTML = '<div class="alert alert-danger p-2 small">' + data.error + '</div>'; return; }
+                            var dangerColor = data.danger_level === 'high' ? 'danger' : data.danger_level === 'medium' ? 'warning' : 'success';
+                            var html = '<div class="card border-' + dangerColor + '"><div class="card-header bg-' + dangerColor + ' bg-opacity-10"><strong>Рекомендация:</strong> ' + data.recommendation.name + '</div><div class="card-body p-2 small">';
+                            html += '<p class="mb-2">' + data.recommendation.reason + '</p>';
+                            html += '<div class="row text-center mb-2"><div class="col-3"><strong>' + data.total_accidents + '</strong><br><small class="text-muted">Всего</small></div><div class="col-3"><strong>' + data.severity_count.light + '</strong><br><small class="text-muted">Легких</small></div><div class="col-3"><strong>' + data.severity_count.heavy + '</strong><br><small class="text-muted">Тяжелых</small></div><div class="col-3"><strong>' + data.severity_count.fatal + '</strong><br><small class="text-muted">Смерт.</small></div></div>';
+                            if (data.categories && data.categories.length > 0) { html += '<p class="mb-1"><strong>Причины:</strong></p>'; data.categories.forEach(function(c) { html += '<span class="badge bg-secondary me-1 mb-1">' + c.name + ' (' + c.count + ')</span>'; }); }
+                            html += '<p class="mt-2 mb-0">Опасность: <strong>' + data.danger_level_name + '</strong></p>';
+                            html += '</div></div>'; document.getElementById('mlResult').innerHTML = html;
+                        }).catch(function() { document.getElementById('mlResult').innerHTML = '<div class="alert alert-danger p-2 small">Ошибка</div>'; })
+                        .finally(function() { btn.disabled = false; btn.innerHTML = 'Получить рекомендацию'; });
+                });
+                </script>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+    <div class="col-lg-5 col-12">
+        <div class="card map-card">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <!-- Фильтр по типу ДТП -->
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            Тип ДТП
+                        </button>
+                        <div class="dropdown-menu p-2" style="min-width: 160px;" id="dtpTypeCheckboxes">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="light" id="dtpLight" checked>
+                                <label class="form-check-label small" for="dtpLight">
+                                    <span style="display: inline-block; width: 10px; height: 10px; background-color: #2ecc71; border-radius: 50%; margin-right: 6px;"></span>
+                                    Лёгкое
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="heavy" id="dtpHeavy" checked>
+                                <label class="form-check-label small" for="dtpHeavy">
+                                    <span style="display: inline-block; width: 10px; height: 10px; background-color: #e67e22; border-radius: 50%; margin-right: 6px;"></span>
+                                    Тяжёлое
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="fatal" id="dtpFatal" checked>
+                                <label class="form-check-label small" for="dtpFatal">
+                                    <span style="display: inline-block; width: 10px; height: 10px; background-color: #e74c3c; border-radius: 50%; margin-right: 6px;"></span>
+                                    Смертельное
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Выбор года и месяцев -->
+                    <select id="accidentYear" class="form-select form-select-sm" style="width: 85px;">
+                        {% for year in accident_years %}
+                            <option value="{{ year }}">{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            Месяцы
+                        </button>
+                        <div class="dropdown-menu p-2" style="min-width: 150px;" id="monthCheckboxes">
+                            <div class="form-check"><input class="form-check-input" type="checkbox" value="1" id="month1"><label class="form-check-label small" for="month1">Январь</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" value="2" id="month2"><label class="form-check-label small" for="month2">Февраль</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" value="3" id="month3"><label class="form-check-label small" for="month3">Март</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" value="4" id="month4"><label class="form-check-label small" for="month4">Апрель</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" value="5" id="month5"><label class="form-check-label small" for="month5">Май</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" value="6" id="month6"><label class="form-check-label small" for="month6">Июнь</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" value="7" id="month7"><label class="form-check-label small" for="month7">Июль</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" value="8" id="month8"><label class="form-check-label small" for="month8">Август</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" value="9" id="month9"><label class="form-check-label small" for="month9">Сентябрь</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" value="10" id="month10"><label class="form-check-label small" for="month10">Октябрь</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" value="11" id="month11"><label class="form-check-label small" for="month11">Ноябрь</label></div>
+                            <div class="form-check"><input class="form-check-input" type="checkbox" value="12" id="month12"><label class="form-check-label small" for="month12">Декабрь</label></div>
+                        </div>
+                    </div>
+                    <span style="position: relative; display: inline-block;">
+                        <input type="text" id="accidentSearch" class="form-control form-control-sm" placeholder="Поиск по тегам..." style="width: 240px;" autocomplete="off">
+                    </span>
+                    <button id="loadAccidentsBtn" class="btn btn-sm btn-primary">Показать</button>
+                    <button onclick="clearSearch()" class="btn btn-sm btn-outline-secondary">Сброс</button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="searchResults" class="small text-muted px-2 pt-1"></div>
+                <div id="main-map"></div>
+                <div class="p-2 border-top bg-white" style="border-radius: 0 0 12px 12px;">
+                    <div class="d-flex flex-wrap justify-content-center gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showPlanned" checked>
+                            <label class="form-check-label small" for="showPlanned">
+                                <span style="display: inline-block; width: 12px; height: 12px; background-color: #ffc107; border-radius: 50%; margin-right: 4px;"></span>
+                                Запланировано
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showConducted" checked>
+                            <label class="form-check-label small" for="showConducted">
+                                <span style="display: inline-block; width: 12px; height: 12px; background-color: #198754; border-radius: 50%; margin-right: 4px;"></span>
+                                Проведено
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showCancelled" checked>
+                            <label class="form-check-label small" for="showCancelled">
+                                <span style="display: inline-block; width: 12px; height: 12px; background-color: #dc3545; border-radius: 50%; margin-right: 4px;"></span>
+                                Отменено
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showApproved" checked>
+                            <label class="form-check-label small" for="showApproved">
+                                <span style="display: inline-block; width: 12px; height: 12px; background-color: #0d6efd; border-radius: 50%; margin-right: 4px;"></span>
+                                Подтверждено
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mt-2 pt-2 border-top">
+                        <a href="{% url 'upload_accidents' %}" class="btn btn-sm btn-outline-secondary w-100">
+                            <i class="bi bi-upload"></i> Загрузка данных
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно добавления -->
+<div class="modal fade" id="eventModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Новое мероприятие</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Название мероприятия *</label>
+                        {{ form.title }}
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Дата проведения *</label>
+                            {{ form.date }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Время начала</label>
+                            {{ form.time }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Тип мероприятия</label>
+                            {{ form.event_type }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Статус</label>
+                            <select name="status" class="form-select">
+                                <option value="planned">Запланировано</option>
+                                <option value="conducted">Проведено</option>
+                                <option value="cancelled">Отменено</option>
+                                <option value="approved">Подтверждено</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Тип места проведения</label>
+                        {{ form.location_type }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Адрес места проведения</label>
+                        {{ form.location_address }}
+                        <div id="add-map" style="height: 300px; margin-top: 10px; border-radius: 8px;"></div>
+                        <small class="text-muted mt-2 d-block">Кликните по карте, чтобы выбрать точное местоположение</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Район</label>
+                        <input type="text" name="district" id="id_district" class="form-control" readonly placeholder="Определится автоматически при клике на карту">
+                        <small class="text-muted">Кликните на карту — район определится автоматически</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Теги</label>
+                        {{ form.tags }}
+                        <small class="text-muted">Ключевые слова через запятую</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ответственное лицо</label>
+                        {{ form.responsible_person }}
+                        <small class="text-muted">ФИО ответственного за мероприятие</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Описание</label>
+                        {{ form.description }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Файлы отчета</label>
+                        <input type="file" name="report_files" class="form-control" multiple>
+                        <small class="text-muted">Можно выбрать несколько файлов</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ссылка на отчет</label>
+                        {{ form.report_link }}
+                        <small class="text-muted">Ссылка на Яндекс.Диск или Google Диск</small>
+                    </div>
+                    {{ form.latitude }}
+                    {{ form.longitude }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://api-maps.yandex.ru/2.1/?apikey={{ YANDEX_API_KEY }}&lang=ru_RU"></script>
+<script>
+    var eventsData = {{ events_for_map| safe }};
+    var schoolsData = {{ schools_for_map| safe }};  // ← ДОБАВЛЕНО
+    var centerCoords = [56.8439, 60.6524];
+
+    console.log('Загружено мероприятий для карты:', eventsData.length);
+    console.log('Загружено школ для карты:', schoolsData.length);  // ← ДОБАВЛЕНО
+
+    var mainMap = null;
+    var addMap = null;
+
+    // Общая функция загрузки границ районов (ОДИН РАЗ)
+    function loadDistrictsToMap(targetMap) {
+        fetch('/static/data/ekb-districts.json')
+            .then(response => response.json())
+            .then(data => {
+                var colors = [
+                    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
+                    '#F8C471', '#A9DFBF', '#F1948A', '#7FB3D5', '#F5B041',
+                    '#B2BABB', '#FAD7A0', '#AED6F1', '#D7BDE2', '#F9E79F'
+                ];
+                
+                var colorIndex = 0;
+                
+                data.features.forEach(function(feature) {
+                    var name = feature.properties.name;
+                    var geometry = feature.geometry;
+                    var color = colors[colorIndex % colors.length];
+                    colorIndex++;
+                    
+                    if (geometry.type === 'Polygon') {
+                        var coords = geometry.coordinates[0].map(function(coord) {
+                            return [coord[1], coord[0]];
+                        });
+                        
+                        var polygon = new ymaps.Polygon([coords]);
+                        polygon.options.set({
+                            fillColor: color,
+                            fillOpacity: 0.25,
+                            strokeColor: color,
+                            strokeWidth: 2,
+                            strokeOpacity: 0.8,
+                            interactivityModel: 'default#transparent',
+                            hasBalloon: false,
+                            hasHint: true
+                        });
+                        polygon.properties.set({
+                            hintContent: name
+                        });
+                        targetMap.geoObjects.add(polygon);
+                        
+                    } else if (geometry.type === 'MultiPolygon') {
+                        geometry.coordinates.forEach(function(polygonCoords) {
+                            var polyCoords = polygonCoords[0].map(function(coord) {
+                                return [coord[1], coord[0]];
+                            });
+                            
+                            var multiPolygon = new ymaps.Polygon([polyCoords]);
+                            multiPolygon.options.set({
+                                fillColor: color,
+                                fillOpacity: 0.25,
+                                strokeColor: color,
+                                strokeWidth: 2,
+                                strokeOpacity: 0.8,
+                                interactivityModel: 'default#transparent',
+                                hasBalloon: false,
+                                hasHint: true
+                            });
+                            multiPolygon.properties.set({
+                                hintContent: name
+                            });
+                            targetMap.geoObjects.add(multiPolygon);
+                        });
+                    }
+                });
+                console.log('Границы районов загружены');
+            })
+            .catch(error => console.error('Ошибка загрузки границ районов:', error));
+    }
+
+    var allMarkers = {
+        planned: [],
+        conducted: [],
+        cancelled: [],
+        approved: [],
+        schools: []  // ← ДОБАВЛЕНО
+    };
+    var accidentMarkers = [];
+    var searchLayer = null;
+
+    function initMainMap() {
+        if (!document.getElementById('main-map')) return;
+
+        mainMap = new ymaps.Map('main-map', {
+            center: centerCoords,
+            zoom: 9,
+            controls: ['zoomControl', 'searchControl', 'typeSelector', 'fullscreenControl']
+        });
+
+        // Маркеры мероприятий
+        for (var i = 0; i < eventsData.length; i++) {
+            var e = eventsData[i];
+            if (e.latitude && e.longitude) {
+                var lat = parseFloat(String(e.latitude).replace(',', '.'));
+                var lng = parseFloat(String(e.longitude).replace(',', '.'));
+                if (isNaN(lat) || isNaN(lng)) continue;
+                
+                var balloonContent = '<strong>' + (e.title || 'Мероприятие') + '</strong>' +
+                    (e.description ? '<br><br>Описание: ' + e.description : '') +
+                    '<br>Дата: ' + (e.date || '') +
+                    (e.address ? '<br>Адрес: ' + e.address : '') +
+                    (e.tags ? '<br>Теги: ' + e.tags : '');
+
+                var marker = new ymaps.Placemark([lat, lng], {
+                    balloonContent: balloonContent,
+                    hintContent: e.title
+                });
+                
+                // Определяем иконку по статусу
+                var iconUrl = '/static/img/planned.png';
+                if (e.status === 'conducted') {
+                    iconUrl = '/static/img/conducted.png';
+                } else if (e.status === 'cancelled') {
+                    iconUrl = '/static/img/cancelled.png';
+                } else if (e.status === 'approved') {
+                    iconUrl = '/static/img/approved.png';
+                }
+
+                var marker = new ymaps.Placemark([lat, lng], {
+                    balloonContent: '<strong>' + (e.title || 'Мероприятие') + '</strong><br>Дата: ' + (e.date || '') + '<br>Адрес: ' + (e.address || 'Не указан'),
+                    hintContent: e.title
+                }, {
+                    iconLayout: 'default#image',
+                    iconImageHref: iconUrl,
+                    iconImageSize: [32, 32],      // размер иконки на карте
+                    iconImageOffset: [-16, -16]   // смещение (центр иконки)
+                });
+
+                if (e.status === 'conducted') {
+                    allMarkers.conducted.push(marker);
+                } else if (e.status === 'cancelled') {
+                    allMarkers.cancelled.push(marker);
+                } else if (e.status === 'approved') {
+                    allMarkers.approved.push(marker);
+                } else {
+                    allMarkers.planned.push(marker);
+                }
+            }
+        }
+        
+        // Показываем все мероприятия по умолчанию
+        allMarkers.planned.forEach(function(m) { mainMap.geoObjects.add(m); });
+        allMarkers.conducted.forEach(function(m) { mainMap.geoObjects.add(m); });
+        allMarkers.cancelled.forEach(function(m) { mainMap.geoObjects.add(m); });
+        allMarkers.approved.forEach(function(m) { mainMap.geoObjects.add(m); });
+
+        // ----- Маркеры школ (ДОБАВЛЕНО) -----
+        for (var i = 0; i < schoolsData.length; i++) {
+            var s = schoolsData[i];
+            if (s.latitude && s.longitude) {
+                var lat = parseFloat(String(s.latitude).replace(',', '.'));
+                var lng = parseFloat(String(s.longitude).replace(',', '.'));
+                if (isNaN(lat) || isNaN(lng)) continue;
+                
+                var schoolMarker = new ymaps.Placemark([lat, lng], {
+                    balloonContent: '<strong>' + (s.name || 'Организация') + '</strong><br>Адрес: ' + (s.address || 'Не указан'),
+                    hintContent: s.name
+                }, {
+                    preset: 'islands#educationIcon'  // иконка школы
+                });
+                
+                allMarkers.schools.push(schoolMarker);
+                mainMap.geoObjects.add(schoolMarker);
+            }
+        }
+        // ----- КОНЕЦ БЛОКА ШКОЛ -----
+
+        console.log('Главная карта инициализирована');
+        
+        // Загрузка границ районов
+        loadDistrictsToMap(mainMap);
+    }
+
+
+    function showEventOnMap(eventId) {
+        for (var i = 0; i < eventsData.length; i++) {
+            var event = eventsData[i];
+            if (event.id == eventId && event.latitude && event.longitude) {
+                var lat = parseFloat(String(event.latitude).replace(',', '.'));
+                var lng = parseFloat(String(event.longitude).replace(',', '.'));
+                var coords = [lat, lng];
+                mainMap.setCenter(coords, 15);
+
+                var tempMarker = new ymaps.Placemark(coords, {
+                    balloonContent: '<strong>' + (event.title || 'Мероприятие') + '</strong><br>' + (event.address || '')
+                });
+                mainMap.geoObjects.add(tempMarker);
+                tempMarker.balloon.open();
+                setTimeout(function () { mainMap.geoObjects.remove(tempMarker); }, 5000);
+                break;
+            }
+        }
+    }
+
+    // Открытие мероприятия с календаря
+    document.addEventListener('DOMContentLoaded', function() {
+        var eventId = sessionStorage.getItem('openEventOnMap');
+        if (eventId) {
+            sessionStorage.removeItem('openEventOnMap');
+            setTimeout(function() {
+                if (typeof showEventOnMap === 'function') {
+                    showEventOnMap(parseInt(eventId));
+                }
+            }, 1000);
+        }
+    });
+
+    function initAddMap() {
+        var mapDiv = document.getElementById('add-map');
+        if (!mapDiv) return;
+
+        addMap = new ymaps.Map('add-map', {
+            center: centerCoords,
+            zoom: 9,
+            controls: ['zoomControl', 'searchControl']
+        });
+
+        var addPlacemark = null;
+        var districtsGeoJSON = null;
+
+        // Функция проверки точки внутри полигона (порядок: широта, долгота)
+        function isPointInPolygon(point, polygonCoords) {
+            var lat = point[0];
+            var lng = point[1];
+            var inside = false;
+            
+            for (var i = 0, j = polygonCoords.length - 1; i < polygonCoords.length; j = i++) {
+                var xi = polygonCoords[i][0];
+                var yi = polygonCoords[i][1];
+                var xj = polygonCoords[j][0];
+                var yj = polygonCoords[j][1];
+                
+                var intersect = ((xi > lat) != (xj > lat)) &&
+                    (lng < (yj - yi) * (lat - xi) / (xj - xi) + yi);
+                
+                if (intersect) inside = !inside;
+            }
+            
+            return inside;
+        }
+
+        // Функция определения района по координатам
+        function getDistrictByCoords(lat, lng) {
+            if (!districtsGeoJSON) return '';
+            
+            for (var f = 0; f < districtsGeoJSON.features.length; f++) {
+                var feature = districtsGeoJSON.features[f];
+                var name = feature.properties.name;
+                var geometry = feature.geometry;
+                
+                try {
+                    if (geometry.type === 'Polygon') {
+                        var coords = geometry.coordinates[0].map(function(coord) {
+                            return [coord[1], coord[0]];
+                        });
+                        if (isPointInPolygon([lat, lng], coords)) {
+                            return name;
+                        }
+                    } else if (geometry.type === 'MultiPolygon') {
+                        for (var p = 0; p < geometry.coordinates.length; p++) {
+                            var coords = geometry.coordinates[p][0].map(function(coord) {
+                                return [coord[1], coord[0]];
+                            });
+                            if (isPointInPolygon([lat, lng], coords)) {
+                                return name;
+                            }
+                        }
+                    }
+                } catch(e) {
+                    console.error('Ошибка при проверке района', name, e);
+                }
+            }
+            return '';
+        }
+
+        // Загрузка границ районов
+        fetch('/static/data/ekb-districts.json')
+            .then(response => response.json())
+            .then(data => {
+                districtsGeoJSON = data;
+                
+                var colors = [
+                    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
+                    '#F8C471', '#A9DFBF', '#F1948A', '#7FB3D5', '#F5B041',
+                    '#B2BABB', '#FAD7A0', '#AED6F1', '#D7BDE2', '#F9E79F'
+                ];
+                
+                var colorIndex = 0;
+                
+                data.features.forEach(function(feature) {
+                    var name = feature.properties.name;
+                    var geometry = feature.geometry;
+                    var color = colors[colorIndex % colors.length];
+                    colorIndex++;
+                    
+                    if (geometry.type === 'Polygon') {
+                        var coords = geometry.coordinates[0].map(function(coord) {
+                            return [coord[1], coord[0]];
+                        });
+                        
+                        var polygon = new ymaps.Polygon([coords]);
+                        polygon.options.set({
+                            fillColor: color,
+                            fillOpacity: 0.1,
+                            strokeColor: color,
+                            strokeWidth: 1.5,
+                            strokeOpacity: 0.5,
+                            clickable: false,
+                            interactivityModel: 'default#transparent'
+                        });
+                        polygon.properties.set({
+                            name: name,
+                            hintContent: name
+                        });
+                        
+                        addMap.geoObjects.add(polygon);
+                    } else if (geometry.type === 'MultiPolygon') {
+                        geometry.coordinates.forEach(function(polygonCoords) {
+                            var polyCoords = polygonCoords[0].map(function(coord) {
+                                return [coord[1], coord[0]];
+                            });
+                            
+                            var multiPolygon = new ymaps.Polygon([polyCoords]);
+                            multiPolygon.options.set({
+                                fillColor: color,
+                                fillOpacity: 0.1,
+                                strokeColor: color,
+                                strokeWidth: 1.5,
+                                strokeOpacity: 0.5,
+                                clickable: false,
+                                interactivityModel: 'default#transparent'
+                            });
+                            multiPolygon.properties.set({
+                                name: name,
+                                hintContent: name
+                            });
+                            
+                            addMap.geoObjects.add(multiPolygon);
+                        });
+                    }
+                });
+                console.log('Границы районов загружены');
+            })
+            .catch(error => console.error('Ошибка загрузки границ районов:', error));
+
+        // Обработчик клика по карте
+        addMap.events.add('click', function (e) {
+            var coords = e.get('coords');
+            var lat = coords[0];
+            var lng = coords[1];
+            
+            // Удаляем старую метку
+            if (addPlacemark) {
+                addMap.geoObjects.remove(addPlacemark);
+            }
+            
+            // Создаём новую метку
+            addPlacemark = new ymaps.Placemark([lat, lng]);
+            addMap.geoObjects.add(addPlacemark);
+            
+            // Сохраняем координаты
+            document.getElementById('id_latitude').value = lat;
+            document.getElementById('id_longitude').value = lng;
+            
+            // Получаем адрес через геокодер
+            ymaps.geocode(coords).then(function (res) {
+                var addr = res.geoObjects.get(0).getAddressLine();
+                document.getElementById('id_location_address').value = addr;
+            });
+            
+            // Определяем район по полигонам
+            var district = getDistrictByCoords(lat, lng);
+            document.getElementById('id_district').value = district;
+        });
+
+        console.log('Карта добавления инициализирована');
+    }
+
+    var rows = document.querySelectorAll('.event-row');
+    for (var i = 0; i < rows.length; i++) {
+        rows[i].addEventListener('click', function (e) {
+            if (e.target.closest('.delete') || e.target.closest('.location')) return;
+            var eventId = this.dataset.id;
+            var isPropaganda = {{ is_propaganda|yesno:"true,false" }};
+            if (isPropaganda) {
+                showEventOnMap(eventId);
+            } else {
+                var editBtn = this.querySelector('.edit');
+                if (editBtn) editBtn.click();
+            }
+        });
+    }
+
+    var locBtns = document.querySelectorAll('.location');
+    for (var i = 0; i < locBtns.length; i++) {
+        locBtns[i].addEventListener('click', function (e) {
+            e.stopPropagation();
+            var row = this.closest('.event-row');
+            if (row) showEventOnMap(row.dataset.id);
+        });
+    }
+
+    var delBtns = document.querySelectorAll('.delete');
+    for (var i = 0; i < delBtns.length; i++) {
+        delBtns[i].addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (confirm('Удалить мероприятие?')) {
+                window.location.href = '/delete/' + this.dataset.id + '/';
+            }
+        });
+    }
+
+    var editBtns = document.querySelectorAll('.edit');
+    for (var i = 0; i < editBtns.length; i++) {
+        editBtns[i].addEventListener('click', function(e) {
+            e.stopPropagation();
+            var id = this.dataset.id;
+            fetch('/api/event/' + id + '/json/')
+                .then(function(resp) { return resp.json(); })
+                .then(function(ev) {
+                    if (ev.error) return alert(ev.error);
+                    if (ev.status === 'conducted' && !{{ is_propaganda|yesno:"true,false" }}) {
+                        alert('Проведённое мероприятие нельзя редактировать');
+                        return;
+                    }
+
+                    var html = `
+                        <div class="modal fade" id="editModal" tabindex="-1">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content">
+                                    <form id="editEventForm">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Редактировать мероприятие</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <input type="hidden" id="edit_id" value="${ev.id}">
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Название мероприятия *</label>
+                                                <input type="text" id="edit_title" class="form-control" value="${(ev.title || '').replace(/"/g, '&quot;')}" required>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Дата проведения *</label>
+                                                    <input type="date" id="edit_date" class="form-control" value="${ev.date || ''}">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Время начала</label>
+                                                    <input type="time" id="edit_time" class="form-control" value="${ev.time || ''}">
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Тип мероприятия</label>
+                                                    <select id="edit_type" class="form-select">
+                                                        <option value="lecture" ${ev.event_type === 'lecture' ? 'selected' : ''}>Лекция / Беседа</option>
+                                                        <option value="practical" ${ev.event_type === 'practical' ? 'selected' : ''}>Практическое занятие</option>
+                                                        <option value="quiz" ${ev.event_type === 'quiz' ? 'selected' : ''}>Викторина / Конкурс</option>
+                                                        <option value="parent_meeting" ${ev.event_type === 'parent_meeting' ? 'selected' : ''}>Родительское собрание</option>
+                                                        <option value="briefing" ${ev.event_type === 'briefing' ? 'selected' : ''}>Инструктаж</option>
+                                                        <option value="action" ${ev.event_type === 'action' ? 'selected' : ''}>Акция / Рейд</option>
+                                                        <option value="excursion" ${ev.event_type === 'excursion' ? 'selected' : ''}>Экскурсия</option>
+                                                        <option value="training" ${ev.event_type === 'training' ? 'selected' : ''}>Тренинг</option>
+                                                        <option value="other" ${ev.event_type === 'other' ? 'selected' : ''}>Иное</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Статус</label>
+                                                    <select id="edit_status" class="form-select">
+                                                        ${(() => {
+                                                            var options = '';
+                                                            if (ev.status === 'approved') {
+                                                                options += '<option value="approved" selected>Подтверждено</option>';
+                                                                options += '<option value="conducted">Проведено</option>';
+                                                            } else if (ev.status === 'conducted') {
+                                                                options += '<option value="conducted" selected disabled>Проведено (нельзя изменить)</option>';
+                                                            } else if (ev.status === 'cancelled') {
+                                                                options += '<option value="cancelled" selected>Отменено</option>';
+                                                                options += '<option value="planned">Запланировано</option>';
+                                                            } else {
+                                                                options += '<option value="planned" ' + (ev.status === 'planned' ? 'selected' : '') + '>Запланировано</option>';
+                                                                options += '<option value="cancelled" ' + (ev.status === 'cancelled' ? 'selected' : '') + '>Отменено</option>';
+                                                            }
+                                                            return options;
+                                                        })()}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Тип места проведения</label>
+                                                <select id="edit_location_type" class="form-select">
+                                                    <option value="school" ${ev.location_type === 'school' ? 'selected' : ''}>Школа (актовый зал, класс)</option>
+                                                    <option value="street" ${ev.location_type === 'street' ? 'selected' : ''}>Улица / Пешеходный переход</option>
+                                                    <option value="autotown" ${ev.location_type === 'autotown' ? 'selected' : ''}>Автогородок</option>
+                                                    <option value="online" ${ev.location_type === 'online' ? 'selected' : ''}>Онлайн</option>
+                                                    <option value="other" ${ev.location_type === 'other' ? 'selected' : ''}>Иное место</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Адрес места проведения</label>
+                                                <input type="text" id="edit_location" class="form-control" value="${(ev.location_address || '').replace(/"/g, '&quot;')}">
+                                                <div id="edit-map" style="height: 300px; margin-top: 10px; border-radius: 8px;"></div>
+                                                <small class="text-muted mt-2 d-block">Кликните по карте, чтобы выбрать точное местоположение</small>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Район</label>
+                                                <input type="text" id="edit_district" class="form-control" readonly value="${(ev.district || '').replace(/"/g, '&quot;')}">
+                                                <small class="text-muted">Кликните на карту — район определится автоматически</small>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Теги</label>
+                                                <input type="text" id="edit_tags" class="form-control" value="${(ev.tags || '').replace(/"/g, '&quot;')}" placeholder="через запятую">
+                                                <small class="text-muted">Ключевые слова через запятую</small>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Ответственное лицо</label>
+                                                <input type="text" id="edit_responsible" class="form-control" value="${(ev.responsible_person || '').replace(/"/g, '&quot;')}">
+                                                <small class="text-muted">ФИО ответственного за мероприятие</small>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Описание</label>
+                                                <textarea id="edit_description" class="form-control" rows="3">${(ev.description || '').replace(/"/g, '&quot;')}</textarea>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Файлы отчета</label>
+                                                <div id="existing-files" class="mb-2">
+                                                    ${ev.report_files && ev.report_files.length ? ev.report_files.map(f => `
+                                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                                            <a href="${f.url}" target="_blank">${f.name}</a>
+                                                            <button type="button" class="btn btn-sm btn-outline-danger delete-file-btn" data-file-id="${f.id}">Удалить</button>
+                                                        </div>
+                                                    `).join('') : '<span class="text-muted">Нет файлов</span>'}
+                                                </div>
+                                                <input type="file" id="edit_report_files" class="form-control" multiple>
+                                                <small class="text-muted">Можно выбрать несколько файлов (Ctrl+клик)</small>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Ссылка на отчет</label>
+                                                <input type="url" id="edit_report_link" class="form-control" value="${(ev.report_link || '').replace(/"/g, '&quot;')}" placeholder="https://...">
+                                                <small class="text-muted">Ссылка на Яндекс.Диск или Google Диск</small>
+                                            </div>
+                                            
+                                            <input type="hidden" id="edit_latitude" value="${ev.latitude || ''}">
+                                            <input type="hidden" id="edit_longitude" value="${ev.longitude || ''}">
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                            <button type="button" id="saveEditBtn" class="btn btn-primary">Сохранить</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    document.body.insertAdjacentHTML('beforeend', html);
+                    var modal = new bootstrap.Modal(document.getElementById('editModal'));
+                    modal.show();
+
+                    // Инициализация карты при открытии модального окна
+                    document.getElementById('editModal').addEventListener('shown.bs.modal', function() {
+                        setTimeout(function() {
+                            if (typeof ymaps !== 'undefined') {
+                                if (!editMap && document.getElementById('edit-map')) {
+                                    initEditMap();
+                                } else if (editMap) {
+                                    editMap.container.fitToViewport();
+                                }
+                            }
+                        }, 200);
+                    }, { once: true });
+                    
+                    // Обработчики удаления файлов
+                    document.querySelectorAll('.delete-file-btn').forEach(function(btn) {
+                        btn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            var fileId = this.dataset.fileId;
+                            if (confirm('Удалить файл?')) {
+                                fetch('/api/delete-file/' + fileId + '/', {
+                                    method: 'POST',
+                                    headers: { 'X-CSRFToken': getCookie('csrftoken') }
+                                }).then(function(r) { return r.json(); }).then(function(res) {
+                                    if (res.success) {
+                                        location.reload();
+                                    } else {
+                                        alert('Ошибка: ' + (res.error || 'Неизвестная ошибка'));
+                                    }
+                                });
+                            }
+                        });
+                    });
+
+                    document.getElementById('saveEditBtn').onclick = function() {
+                        var data = {
+                            title: document.getElementById('edit_title').value,
+                            date: document.getElementById('edit_date').value,
+                            time: document.getElementById('edit_time').value,
+                            event_type: document.getElementById('edit_type').value,
+                            status: document.getElementById('edit_status').value,
+                            location_type: document.getElementById('edit_location_type').value,
+                            location_address: document.getElementById('edit_location').value,
+                            description: document.getElementById('edit_description').value,
+                            report_link: document.getElementById('edit_report_link').value,
+                            tags: document.getElementById('edit_tags').value,
+                            responsible_person: document.getElementById('edit_responsible').value,
+                            latitude: document.getElementById('edit_latitude').value,
+                            longitude: document.getElementById('edit_longitude').value,
+                            district: document.getElementById('edit_district').value,
+                        };
+                        
+                        fetch('/api/event/' + id + '/update/', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                            body: JSON.stringify(data)
+                        }).then(function(r) { return r.json(); }).then(function(res) {
+                            if (res.success) {
+                                var fileInput = document.getElementById('edit_report_files');
+                                if (fileInput && fileInput.files.length > 0) {
+                                    var formData = new FormData();
+                                    formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+                                    for (var i = 0; i < fileInput.files.length; i++) {
+                                        formData.append('report_files', fileInput.files[i]);
+                                    }
+                                    
+                                    fetch('/api/event/' + id + '/update/', {
+                                        method: 'POST',
+                                        body: formData
+                                    }).then(function(r) { return r.json(); }).then(function(fileRes) {
+                                        if (fileRes.success) {
+                                            location.reload();
+                                        } else {
+                                            alert('Данные обновлены, но файлы не загрузились: ' + (fileRes.error || ''));
+                                            location.reload();
+                                        }
+                                    });
+                                } else {
+                                    location.reload();
+                                }
+                            } else {
+                                alert('Ошибка: ' + (res.error || 'Неизвестная ошибка'));
+                            }
+                        });
+                    };
+                });
+        });
+    }
+
+    function getCookie(name) {
+        var v = null;
+        if (document.cookie) {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var parts = cookies[i].trim().split('=');
+                if (parts[0] === name) v = decodeURIComponent(parts[1]);
+            }
+        }
+        return v;
+    }
+
+    // Инициализация карты в модальном окне редактирования
+    var editMap = null;
+    var editPlacemark = null;
+
+    function initEditMap() {
+        var lat = parseFloat(document.getElementById('edit_latitude').value) || 56.8439;
+        var lng = parseFloat(document.getElementById('edit_longitude').value) || 60.6524;
+        
+        if (!document.getElementById('edit-map')) return;
+
+        editMap = new ymaps.Map('edit-map', {
+            center: [lat, lng],
+            zoom: 12,
+            controls: ['zoomControl', 'searchControl']
+        });
+
+        var editPlacemark = null;
+        var editDistrictsGeoJSON = null;
+
+        // Функция проверки точки внутри полигона
+        function isPointInPolygon(point, polygonCoords) {
+            var lat = point[0];
+            var lng = point[1];
+            var inside = false;
+            
+            for (var i = 0, j = polygonCoords.length - 1; i < polygonCoords.length; j = i++) {
+                var xi = polygonCoords[i][0];
+                var yi = polygonCoords[i][1];
+                var xj = polygonCoords[j][0];
+                var yj = polygonCoords[j][1];
+                
+                var intersect = ((xi > lat) != (xj > lat)) &&
+                    (lng < (yj - yi) * (lat - xi) / (xj - xi) + yi);
+                
+                if (intersect) inside = !inside;
+            }
+            
+            return inside;
+        }
+
+        // Функция определения района по координатам
+        function getDistrictByCoords(lat, lng) {
+            if (!editDistrictsGeoJSON) return '';
+            
+            for (var f = 0; f < editDistrictsGeoJSON.features.length; f++) {
+                var feature = editDistrictsGeoJSON.features[f];
+                var name = feature.properties.name;
+                var geometry = feature.geometry;
+                
+                try {
+                    if (geometry.type === 'Polygon') {
+                        var coords = geometry.coordinates[0].map(function(coord) {
+                            return [coord[1], coord[0]];
+                        });
+                        if (isPointInPolygon([lat, lng], coords)) {
+                            return name;
+                        }
+                    } else if (geometry.type === 'MultiPolygon') {
+                        for (var p = 0; p < geometry.coordinates.length; p++) {
+                            var coords = geometry.coordinates[p][0].map(function(coord) {
+                                return [coord[1], coord[0]];
+                            });
+                            if (isPointInPolygon([lat, lng], coords)) {
+                                return name;
+                            }
+                        }
+                    }
+                } catch(e) {
+                    console.error('Ошибка при проверке района', name, e);
+                }
+            }
+            return '';
+        }
+
+        // Загрузка границ районов
+        fetch('/static/data/ekb-districts.json')
+            .then(response => response.json())
+            .then(data => {
+                editDistrictsGeoJSON = data;
+                
+                var colors = [
+                    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
+                    '#F8C471', '#A9DFBF', '#F1948A', '#7FB3D5', '#F5B041',
+                    '#B2BABB', '#FAD7A0', '#AED6F1', '#D7BDE2', '#F9E79F'
+                ];
+                
+                var colorIndex = 0;
+                
+                data.features.forEach(function(feature) {
+                    var name = feature.properties.name;
+                    var geometry = feature.geometry;
+                    var color = colors[colorIndex % colors.length];
+                    colorIndex++;
+                    
+                    if (geometry.type === 'Polygon') {
+                        var coords = geometry.coordinates[0].map(function(coord) {
+                            return [coord[1], coord[0]];
+                        });
+                        
+                        var polygon = new ymaps.Polygon([coords]);
+                        polygon.options.set({
+                            fillColor: color,
+                            fillOpacity: 0.1,
+                            strokeColor: color,
+                            strokeWidth: 1.5,
+                            strokeOpacity: 0.5,
+                            clickable: false,
+                            interactivityModel: 'default#transparent'
+                        });
+                        polygon.properties.set({
+                            name: name,
+                            hintContent: name
+                        });
+                        
+                        editMap.geoObjects.add(polygon);
+                    } else if (geometry.type === 'MultiPolygon') {
+                        geometry.coordinates.forEach(function(polygonCoords) {
+                            var polyCoords = polygonCoords[0].map(function(coord) {
+                                return [coord[1], coord[0]];
+                            });
+                            
+                            var multiPolygon = new ymaps.Polygon([polyCoords]);
+                            multiPolygon.options.set({
+                                fillColor: color,
+                                fillOpacity: 0.1,
+                                strokeColor: color,
+                                strokeWidth: 1.5,
+                                strokeOpacity: 0.5,
+                                clickable: false,
+                                interactivityModel: 'default#transparent'
+                            });
+                            multiPolygon.properties.set({
+                                name: name,
+                                hintContent: name
+                            });
+                            
+                            editMap.geoObjects.add(multiPolygon);
+                        });
+                    }
+                });
+                console.log('Границы районов загружены на карту редактирования');
+            })
+            .catch(error => console.error('Ошибка загрузки границ районов:', error));
+
+        // Устанавливаем маркер, если есть координаты
+        if (lat && lng && lat !== 0 && lng !== 0) {
+            editPlacemark = new ymaps.Placemark([lat, lng]);
+            editMap.geoObjects.add(editPlacemark);
+        }
+
+        // Обработчик клика по карте
+        editMap.events.add('click', function(e) {
+            var coords = e.get('coords');
+            var newLat = coords[0];
+            var newLng = coords[1];
+            
+            if (editPlacemark) {
+                editMap.geoObjects.remove(editPlacemark);
+            }
+            editPlacemark = new ymaps.Placemark([newLat, newLng]);
+            editMap.geoObjects.add(editPlacemark);
+            
+            document.getElementById('edit_latitude').value = newLat;
+            document.getElementById('edit_longitude').value = newLng;
+            
+            ymaps.geocode(coords).then(function(res) {
+                var addr = res.geoObjects.get(0).getAddressLine();
+                document.getElementById('edit_location').value = addr;
+            });
+            
+            var district = getDistrictByCoords(newLat, newLng);
+            document.getElementById('edit_district').value = district;
+            document.getElementById('edit_district_display').value = district;
+        });
+    }
+
+
+    ymaps.ready(function () {
+        initMainMap();
+        initAddMap();
+        
+        document.getElementById('showPlanned').addEventListener('change', function(e) {
+            allMarkers.planned.forEach(function(m) {
+                e.target.checked ? mainMap.geoObjects.add(m) : mainMap.geoObjects.remove(m);
+            });
+        });
+
+        document.getElementById('showConducted').addEventListener('change', function(e) {
+            allMarkers.conducted.forEach(function(m) {
+                e.target.checked ? mainMap.geoObjects.add(m) : mainMap.geoObjects.remove(m);
+            });
+        });
+
+        document.getElementById('showCancelled').addEventListener('change', function(e) {
+            allMarkers.cancelled.forEach(function(m) {
+                e.target.checked ? mainMap.geoObjects.add(m) : mainMap.geoObjects.remove(m);
+            });
+        });
+
+        document.getElementById('showApproved').addEventListener('change', function(e) {
+            allMarkers.approved.forEach(function(m) {
+                e.target.checked ? mainMap.geoObjects.add(m) : mainMap.geoObjects.remove(m);
+            });
+        });
+
+        function loadAccidentsByMonths() {
+            var year = document.getElementById('accidentYear').value;
+            
+            // Собираем выбранные месяцы
+            var months = [];
+            for (var i = 1; i <= 12; i++) {
+                var checkbox = document.getElementById('month' + i);
+                if (checkbox && checkbox.checked) {
+                    months.push(i);
+                }
+            }
+            
+            // Собираем выбранные типы ДТП (без medium)
+            var severities = [];
+            if (document.getElementById('dtpLight').checked) severities.push('light');
+            if (document.getElementById('dtpHeavy').checked) severities.push('heavy');
+            if (document.getElementById('dtpFatal').checked) severities.push('fatal');
+            
+            if (months.length === 0) {
+                // Если месяцы не выбраны — берём все месяцы
+                for (var i = 1; i <= 12; i++) {
+                    months.push(i);
+                }
+            }
+            
+            if (severities.length === 0) {
+                alert('Выберите хотя бы один тип ДТП');
+                return;
+            }
+            
+            var button = document.getElementById('loadAccidentsBtn');
+            button.disabled = true;
+            button.innerHTML = 'Загрузка...';
+            
+            // Очищаем результаты поиска по ключевым словам
+            if (searchLayer) { mainMap.geoObjects.remove(searchLayer); searchLayer = null; }
+            document.getElementById('searchResults').innerHTML = '';
+            
+            fetch('/api/accidents-by-months/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ year: year, months: months, severities: severities })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Удаляем старые маркеры ДТП
+                if (typeof accidentMarkers !== 'undefined') {
+                    accidentMarkers.forEach(function(marker) {
+                        mainMap.geoObjects.remove(marker);
+                    });
+                }
+                accidentMarkers = [];
+                
+                if (data.length === 0) {
+                    alert('Нет ДТП за выбранный период');
+                    button.innerHTML = 'Показать';
+                    button.disabled = false;
+                    return;
+                }
+                
+                data.forEach(function(accident) {
+                    // Определяем категорию по ключевым словам в описании
+                    var desc = (accident.description || '').toLowerCase() + ' ' + (accident.address || '').toLowerCase();
+                    var category = '';
+                    if (desc.indexOf('светоотражат') >= 0 || desc.indexOf('световозвращат') >= 0 || desc.indexOf('фликер') >= 0 || desc.indexOf('темное время') >= 0 || desc.indexOf('тёмное время') >= 0 || desc.indexOf('освещение отсутствует') >= 0 || desc.indexOf('освещение включено') >= 0) category = 'Освещение';
+                    else if (desc.indexOf('светофор') >= 0 || desc.indexOf('красный') >= 0 || desc.indexOf('запрещающий') >= 0) category = 'Проезд на запрещающий сигнал';
+                    else if (desc.indexOf('пешеход') >= 0 || desc.indexOf('переход') >= 0 || desc.indexOf('тротуар') >= 0) category = 'Пешеходы';
+                    else if (desc.indexOf('велосипед') >= 0 || desc.indexOf('самокат') >= 0 || desc.indexOf('скутер') >= 0) category = 'Велосипедисты';
+                    else if (desc.indexOf('ребёнок') >= 0 || desc.indexOf('ребенок') >= 0 || desc.indexOf('дети') >= 0 || desc.indexOf('школьник') >= 0 || desc.indexOf('несовершеннолетн') >= 0) category = 'Дети';
+                    else if (desc.indexOf('скорост') >= 0 || desc.indexOf('обгон') >= 0 || desc.indexOf('встречн') >= 0 || desc.indexOf('превышен') >= 0) category = 'Нарушения скорости';
+                    else if (desc.indexOf('столкновен') >= 0 || desc.indexOf('врезался') >= 0 || desc.indexOf('въехал') >= 0 || desc.indexOf('выезд') >= 0) category = 'Столкновения';
+                    else if (desc.indexOf('снег') >= 0 || desc.indexOf('гололёд') >= 0 || desc.indexOf('дожд') >= 0 || desc.indexOf('туман') >= 0 || desc.indexOf('метел') >= 0 || desc.indexOf('занос') >= 0 || desc.indexOf('пасмурно') >= 0) category = 'Погодные условия';
+                    else if (desc.indexOf('наезд') >= 0 || desc.indexOf('сбил') >= 0 || desc.indexOf('сбит') >= 0 || desc.indexOf('опрокид') >= 0) category = 'Наезды';
+                    else if (desc.indexOf('автобус') >= 0 || desc.indexOf('трамвай') >= 0 || desc.indexOf('троллейбус') >= 0 || desc.indexOf('маршрут') >= 0 || desc.indexOf('остановк') >= 0) category = 'Общественный транспорт';
+                    else if (desc.indexOf('животн') >= 0 || desc.indexOf('лось') >= 0 || desc.indexOf('собака') >= 0) category = 'Животные';
+                    
+                    var desc = accident.description || '';
+                    // Извлекаем части из описания
+                    var tagsMatch = desc.match(/Теги: ([^\.]+)/);
+                    var lightMatch = desc.match(/Освещение: ([^\.]+)/);
+                    var weatherMatch = desc.match(/Погода: ([^\.]+)/);
+                    var catMatch = desc.match(/Категория: ([^\.]+)/);
+                    var roadMatch = desc.match(/Дорожные условия: ([^\.]+)/);
+                    var violationsMatch = desc.match(/Нарушения: ([^\.]+)/);
+
+                    var tagsHtml = '';
+                    if (category) tagsHtml += '<br> Категория: <b>' + category + '</b>';
+                    if (lightMatch) tagsHtml += '<br> Освещение: ' + lightMatch[1];
+                    if (weatherMatch) tagsHtml += '<br> Погода: ' + weatherMatch[1];
+                    if (roadMatch) tagsHtml += '<br> Дорога: ' + roadMatch[1];
+                    if (violationsMatch) tagsHtml += '<br> Нарушение: ' + violationsMatch[1];
+
+                    var balloonContent = '<strong>' + (accident.title || 'ДТП') + '</strong>' +
+                        tagsHtml +
+                        '<br> Дата: ' + accident.date +
+                        (accident.address ? '<br> Адрес: ' + accident.address : '') +
+                        (accident.severity_text ? '<br> Тяжесть: ' + accident.severity_text : '');
+
+                    var marker = new ymaps.Placemark([accident.lat, accident.lng], {
+                        balloonContent: balloonContent,
+                        hintContent: 'ДТП: ' + accident.title
+                    }, {
+                        iconLayout: 'default#image',
+                        iconImageHref: '/static/img/dtp-icon.png',
+                        iconImageSize: [24, 24],
+                        iconImageOffset: [-12, -12]
+                    });
+                    
+                    accidentMarkers.push(marker);
+                    mainMap.geoObjects.add(marker);
+                });
+                
+                button.innerHTML = 'Показать';
+                button.disabled = false;
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Ошибка загрузки ДТП');
+                button.innerHTML = 'Показать';
+                button.disabled = false;
+            });
+        }
+
+        document.getElementById('loadAccidentsBtn').addEventListener('click', function() {
+            var query = document.getElementById('accidentSearch').value.trim();
+            if (query.length >= 2) {
+                searchAccidents();
+            } else {
+                loadAccidentsByMonths();
+            }
+        });
+    });
+    
+    
+    function filterEvents() {
+        var status = document.getElementById('filterStatus').value;
+        var type = document.getElementById('filterType').value;
+        var district = document.getElementById('filterDistrict').value;
+        var tags = document.getElementById('filterTags').value.toLowerCase();
+        
+        var rows = document.querySelectorAll('.event-row');
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var show = true;
+            
+            if (status !== 'all' && row.dataset.status !== status) show = false;
+            if (type !== 'all' && row.dataset.type !== type) show = false;
+            if (district !== 'all' && row.dataset.district !== district) show = false;
+            if (tags && row.dataset.tags.toLowerCase().indexOf(tags) === -1) show = false;
+            
+            row.style.display = show ? '' : 'none';
+        }
+    }
+
+    document.getElementById('filterStatus').addEventListener('change', filterEvents);
+    document.getElementById('filterType').addEventListener('change', filterEvents);
+    document.getElementById('filterDistrict').addEventListener('change', filterEvents);
+    document.getElementById('filterTags').addEventListener('change', filterEvents);
+
+    document.getElementById('clearFilters').addEventListener('click', function() {
+        document.getElementById('filterStatus').value = 'all';
+        document.getElementById('filterType').value = 'all';
+        document.getElementById('filterDistrict').value = 'all';
+        document.getElementById('filterTags').selectedIndex = 0;
+        filterEvents();
+    });
+
+    document.querySelectorAll('.approve-event').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const eventId = this.dataset.id;
+            if (confirm('Подтвердить проведение мероприятия? Статус изменится на "Проведено"')) {
+                fetch('/api/event/' + eventId + '/approve/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                    alert('Ошибка при подтверждении');
+                });
+            }
+        });
+    });
+    
+
+// Сортировка по клику на заголовок
+document.querySelectorAll('.sort-header').forEach(function(header) {
+    header.addEventListener('click', function() {
+        var sortField = this.dataset.sort;
+        var currentUrl = new URL(window.location.href);
+        var currentSort = currentUrl.searchParams.get('sort') || '-created_at';
+        var newSort;
+        
+        if (currentSort === sortField) {
+            newSort = '-' + sortField;
+        } else {
+            newSort = sortField;
+        }
+        
+        currentUrl.searchParams.set('sort', newSort);
+        currentUrl.searchParams.set('page', '1');  // Сбрасываем на первую страницу
+        window.location.href = currentUrl.toString();
+    });
+});
+
+// Поиск ДТП по ключевым словам
+var searchLayer = null;
+
+// Поиск ДТП по ключевым словам
+function searchAccidents() {
+    var query = document.getElementById('accidentSearch').value.trim();
+    if (query.length < 2) { alert('Введите хотя бы 2 символа'); return; }
+    
+    var year = document.getElementById('accidentYear').value;
+    var months = [];
+    for (var i = 1; i <= 12; i++) {
+        var cb = document.getElementById('month' + i);
+        if (cb && cb.checked) months.push(i);
+    }
+    
+    // Скрываем ДТП
+    if (typeof accidentMarkers !== 'undefined') {
+        accidentMarkers.forEach(function(m) { mainMap.geoObjects.remove(m); });
+    }
+    if (searchLayer) { mainMap.geoObjects.remove(searchLayer); }
+    
+    var url = '/api/accidents/search/?q=' + encodeURIComponent(query) + '&year=' + year;
+    if (months.length > 0) url += '&months=' + months.join(',');
+    
+    fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.length) {
+                document.getElementById('searchResults').innerHTML = 'Ничего не найдено';
+                return;
+            }
+            searchLayer = new ymaps.GeoObjectCollection();
+            data.forEach(function(a) {
+                var desc = a.description || '';
+                var lightMatch = desc.match(/Освещение: ([^\.]+)/);
+                var weatherMatch = desc.match(/Погода: ([^\.]+)/);
+                var catMatch = desc.match(/Категория: ([^\.]+)/);
+                var roadMatch = desc.match(/Дорожные условия: ([^\.]+)/);
+                var violationsMatch = desc.match(/Нарушения: ([^\.]+)/);
+                var tagsHtml = '';
+                if (a.category) tagsHtml += '<br>Категория: <b>' + a.category + '</b>';
+                if (lightMatch) tagsHtml += '<br>Освещение: ' + lightMatch[1];
+                if (weatherMatch) tagsHtml += '<br>Погода: ' + weatherMatch[1];
+                if (catMatch) tagsHtml += '<br>Тип ДТП: ' + catMatch[1];
+                if (roadMatch) tagsHtml += '<br>Дорога: ' + roadMatch[1];
+                if (violationsMatch) tagsHtml += '<br>Нарушение: ' + violationsMatch[1];
+                searchLayer.add(new ymaps.Placemark([a.latitude, a.longitude], {
+                    hintContent: a.title,
+                    balloonContent: '<b>' + a.title + '</b>' + tagsHtml + '<br>Дата: ' + a.date + '<br>Адрес: ' + a.address + '<br>💀 Тяжесть: ' + a.severity_text
+                }, {
+                    iconLayout: 'default#image',
+                    iconImageHref: '/static/img/dtp-icon.png',
+                    iconImageSize: [32, 32],
+                    iconImageOffset: [-16, -16]
+                }));
+            });
+            mainMap.geoObjects.add(searchLayer);
+            mainMap.setCenter([data[0].latitude, data[0].longitude], 12);
+            var periodText = year + (months.length === 1 ? ', месяц ' + months[0] : ', все месяцы');
+            
+        });
+}
+
+
+function clearSearch() {
+    document.getElementById('accidentSearch').value = '';
+    document.getElementById('searchResults').innerHTML = '';
+    if (searchLayer) { mainMap.geoObjects.remove(searchLayer); searchLayer = null; }
+    if (typeof loadAccidentsByMonths === 'function') loadAccidentsByMonths();
+}
+
+// Автодополнение поиска по тегам
+var accidentTags = [];
+fetch('/api/accidents/tags/')
+    .then(function(r) { return r.json(); })
+    .then(function(data) { accidentTags = data; });
+
+document.getElementById('accidentSearch').addEventListener('input', function() {
+    var val = this.value.toLowerCase();
+    if (val.length < 1) return;
+    var match = accidentTags.find(function(t) { return t.toLowerCase().startsWith(val); });
+    if (match) {
+        this.setAttribute('data-suggestion', match);
+    }
+});
+
+document.getElementById('accidentSearch').addEventListener('keydown', function(e) {
+    if (e.key === 'Tab' && this.getAttribute('data-suggestion')) {
+        e.preventDefault();
+        this.value = this.getAttribute('data-suggestion');
+        this.removeAttribute('data-suggestion');
+    }
+});
+
+var accidentTags = ['Наезд на пешехода', 'Столкновение', 'Съезд с дороги', 'Наезд на препятствие', 'Опрокидывание', 'Наезд на велосипедиста', 'Наезд на стоящее ТС', 'Наезд на животное', 'Падение пассажира', 'В темное время суток', 'Светлое время суток', 'Сумерки', 'Снегопад', 'Дождь', 'Туман', 'Гололёд', 'Ясно', 'Пасмурно', 'светоотражатель', 'пешеход', 'переход'];
+
+(function() {
+    var input = document.getElementById('accidentSearch');
+    var dropdown = document.createElement('div');
+    dropdown.id = 'tagDropdown';
+    dropdown.style.cssText = 'display:none;position:absolute;top:100%;left:0;background:#fff;border:1px solid #ddd;border-radius:4px;max-height:200px;overflow-y:auto;z-index:9999;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.1);';
+    input.parentNode.style.position = 'relative';
+    input.parentNode.appendChild(dropdown);
+    
+    input.addEventListener('input', function() {
+        var v = this.value.toLowerCase();
+        dropdown.innerHTML = '';
+        dropdown.style.width = this.offsetWidth + 'px';
+        if (!v) { dropdown.style.display = 'none'; return; }
+        var matches = accidentTags.filter(function(t) { return t.toLowerCase().includes(v); });
+        if (!matches.length) { dropdown.style.display = 'none'; return; }
+        matches.forEach(function(t) {
+            var item = document.createElement('div');
+            item.textContent = t;
+            item.style.cssText = 'padding:6px 10px;cursor:pointer;';
+            item.addEventListener('mouseenter', function() { this.style.background = '#f0f0f0'; });
+            item.addEventListener('mouseleave', function() { this.style.background = '#fff'; });
+            item.addEventListener('click', function() { input.value = t; dropdown.style.display = 'none'; });
+            dropdown.appendChild(item);
+        });
+        dropdown.style.display = 'block';
+    });
+    
+    document.addEventListener('click', function(e) { if (e.target !== input) dropdown.style.display = 'none'; });
+})();
+</script>
+{% endblock %}

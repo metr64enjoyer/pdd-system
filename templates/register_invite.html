@@ -1,0 +1,103 @@
+{% extends 'base_auth.html' %}
+{% load static %}
+
+{% block title %}Регистрация сотрудника — ПДД Система{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center min-vh-100 align-items-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold">Регистрация сотрудника</h2>
+                        <p class="text-muted">Отделение пропаганды ГИБДД</p>
+                    </div>
+
+                    <form method="post" id="registerForm">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Фамилия *</label>
+                                <input type="text" name="last_name" class="form-control" required placeholder="Иванов">
+                                {% if form.last_name.errors %}
+                                <div class="text-danger small">{{ form.last_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Имя *</label>
+                                <input type="text" name="first_name" class="form-control" required placeholder="Иван">
+                                {% if form.first_name.errors %}
+                                <div class="text-danger small">{{ form.first_name.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Отчество</label>
+                            <input type="text" name="patronymic" class="form-control" placeholder="Иванович">
+                            {% if form.patronymic.errors %}
+                            <div class="text-danger small">{{ form.patronymic.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Email *</label>
+                            <input type="email" name="email" class="form-control" required placeholder="example@mail.ru">
+                            {% if form.email.errors %}
+                            <div class="text-danger small">{{ form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Логин *</label>
+                            <input type="text" name="username" class="form-control" required placeholder="Введите логин">
+                            {% if form.username.errors %}
+                            <div class="text-danger small">{{ form.username.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Должность</label>
+                            <input type="text" name="position" class="form-control" placeholder="Например: Инспектор">
+                            {% if form.position.errors %}
+                            <div class="text-danger small">{{ form.position.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Телефон</label>
+                            <input type="text" name="phone" class="form-control" placeholder="+7 (XXX) XXX-XX-XX">
+                            {% if form.phone.errors %}
+                            <div class="text-danger small">{{ form.phone.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Пароль *</label>
+                            <input type="password" name="password1" class="form-control" required placeholder="Введите пароль" autocomplete="off">
+                            {% if form.password1.errors %}
+                            <div class="text-danger small">{{ form.password1.errors }}</div>
+                            {% endif %}
+                            <small class="text-muted">Минимум 8 символов</small>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Подтверждение пароля *</label>
+                            <input type="password" name="password2" class="form-control" required placeholder="Повторите пароль" autocomplete="off">
+                            {% if form.password2.errors %}
+                            <div class="text-danger small">{{ form.password2.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                            Зарегистрироваться
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

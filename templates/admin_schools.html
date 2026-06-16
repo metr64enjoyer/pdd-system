@@ -1,0 +1,244 @@
+{% extends 'admin_base.html' %}
+
+{% block admin_title %}Организации{% endblock %}
+
+{% block admin_content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addSchoolModal">Добавить организацию</button>
+            <button id="deleteSelectedBtn" class="btn btn-danger btn-sm ms-2">Удалить выбранные</button>
+        </div>
+        <form method="get" class="d-flex gap-1">
+            <input type="text" name="search" class="form-control form-control-sm" placeholder="Поиск по названию" value="{{ request.GET.search }}">
+            <button type="submit" class="btn btn-outline-secondary btn-sm">Найти</button>
+            <a href="{% url 'admin_schools' %}" class="btn btn-outline-secondary btn-sm">Сброс</a>
+        </form>
+    </div>
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th class="checkbox-cell">
+                        <span id="selectAllContainer" style="display: none;">
+                            <input type="checkbox" id="selectAllCheckbox" class="select-all-checkbox">
+                        </span>
+                    </th>
+                    <th class="sort-header" data-sort="id">ID <span class="sort-icon">{% if request.GET.sort == 'id' %}&#9650;{% elif request.GET.sort == '-id' %}&#9660;{% else %}&#9660;{% endif %}</span></th>
+                    <th>Название</th>
+                    <th>ИНН</th>
+                    <th>Адрес</th>
+                    <th>Телефон</th>
+                    <th>Активна</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for school in schools %}
+                <tr class="school-row" data-id="{{ school.id }}" data-name="{{ school.name }}" data-inn="{{ school.inn }}" data-address="{{ school.address|default:'' }}" data-phone="{{ school.phone|default:'' }}" data-email="{{ school.email|default:'' }}">
+                    <td class="checkbox-cell">
+                        <input type="checkbox" class="row-checkbox" value="{{ school.id }}">
+                    </td>
+                    <td>{{ school.id }}</td>
+                    <td>{{ school.name }}</td>
+                    <td>{{ school.inn }}</td>
+                    <td>{{ school.address|default:"—"|truncatechars:40 }}</td>
+                    <td>{{ school.phone|default:"—" }}</td>
+                    <td>{% if school.is_active %}Да{% else %}Нет{% endif %}</td>
+                </tr>
+                {% empty %}
+
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-white">
+        <nav>
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?sort={{ request.GET.sort }}&search={{ request.GET.search }}&page={{ page_obj.previous_page_number }}">← Назад</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">← Назад</span></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?sort={{ request.GET.sort }}&search={{ request.GET.search }}&page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?sort={{ request.GET.sort }}&search={{ request.GET.search }}&page={{ page_obj.next_page_number }}">Вперёд →</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Вперёд →</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно добавления -->
+<div class="modal fade" id="addSchoolModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'admin_add_school' %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить школу</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2"><label>Название</label><input type="text" name="name" class="form-control" required></div>
+                    <div class="mb-2"><label>ИНН</label><input type="text" name="inn" class="form-control" required></div>
+                    <div class="mb-2"><label>Адрес</label><input type="text" name="address" class="form-control"></div>
+                    <div class="mb-2"><label>Телефон</label><input type="text" name="phone" class="form-control"></div>
+                    <div class="mb-2"><label>Email</label><input type="email" name="email" class="form-control"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования -->
+<div class="modal fade" id="editSchoolModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'admin_edit_school' %}" id="editSchoolForm">
+                {% csrf_token %}
+                <input type="hidden" name="school_id" id="edit_school_id">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редактировать школу</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2"><label>Название</label><input type="text" name="name" id="edit_name" class="form-control" required></div>
+                    <div class="mb-2"><label>ИНН</label><input type="text" name="inn" id="edit_inn" class="form-control" required></div>
+                    <div class="mb-2"><label>Адрес</label><input type="text" name="address" id="edit_address" class="form-control"></div>
+                    <div class="mb-2"><label>Телефон</label><input type="text" name="phone" id="edit_phone" class="form-control"></div>
+                    <div class="mb-2"><label>Email</label><input type="email" name="email" id="edit_email" class="form-control"></div>
+                    <div class="mb-2">
+                        <label><input type="checkbox" name="is_active" id="edit_is_active"> Активна</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" id="deleteSchoolBtn">Удалить</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedIds = new Set();
+    const selectAllContainer = document.getElementById('selectAllContainer');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+
+    function updateSelectAllContainer() {
+        const anyChecked = document.querySelectorAll('.row-checkbox:checked').length > 0;
+        if (selectAllContainer) selectAllContainer.style.display = anyChecked ? 'inline' : 'none';
+    }
+
+    function updateDeleteButton() {
+        const anyChecked = document.querySelectorAll('.row-checkbox:checked').length > 0;
+        const deleteBtn = document.getElementById('deleteSelectedBtn');
+        if (deleteBtn) deleteBtn.disabled = !anyChecked;
+        updateSelectAllContainer();
+    }
+
+    document.querySelectorAll('.row-checkbox').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const id = parseInt(this.value);
+            const row = this.closest('.school-row');
+            if (this.checked) { selectedIds.add(id); row.classList.add('selected'); }
+            else { selectedIds.delete(id); row.classList.remove('selected'); }
+            updateDeleteButton();
+        });
+    });
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            document.querySelectorAll('.row-checkbox').forEach(cb => {
+                cb.checked = this.checked;
+                const row = cb.closest('.school-row');
+                const id = parseInt(cb.value);
+                if (this.checked) { selectedIds.add(id); row.classList.add('selected'); }
+                else { selectedIds.delete(id); row.classList.remove('selected'); }
+            });
+            updateDeleteButton();
+        });
+    }
+
+    document.getElementById('deleteSelectedBtn')?.addEventListener('click', function() {
+        if (selectedIds.size === 0) { alert('Выберите записи'); return; }
+        if (confirm(`Удалить ${selectedIds.size} записей?`)) {
+            fetch(window.location.href, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: JSON.stringify({ ids: Array.from(selectedIds), action: 'delete_selected' })
+            }).then(r => r.json()).then(data => { if (data.success) location.reload(); });
+        }
+    });
+
+    document.querySelectorAll('.school-row').forEach(row => {
+        row.addEventListener('click', function(e) {
+            if (e.target.type === 'checkbox') return;
+            document.getElementById('edit_school_id').value = this.dataset.id;
+            document.getElementById('edit_name').value = this.dataset.name;
+            document.getElementById('edit_inn').value = this.dataset.inn;
+            document.getElementById('edit_address').value = this.dataset.address;
+            document.getElementById('edit_phone').value = this.dataset.phone;
+            document.getElementById('edit_email').value = this.dataset.email;
+            new bootstrap.Modal(document.getElementById('editSchoolModal')).show();
+        });
+    });
+
+    document.getElementById('deleteSchoolBtn')?.addEventListener('click', function() {
+        if (confirm('Удалить школу?')) {
+            document.getElementById('editSchoolForm').action = "{% url 'admin_delete_school' %}";
+            document.getElementById('editSchoolForm').submit();
+        }
+    });
+
+    document.querySelectorAll('.sort-header').forEach(function(header) {
+        header.addEventListener('click', function() {
+            var sortField = this.dataset.sort;
+            var currentUrl = new URL(window.location.href);
+            var currentSort = currentUrl.searchParams.get('sort') || '';
+            var newSort = (currentSort === sortField) ? '-' + sortField : sortField;
+            currentUrl.searchParams.set('sort', newSort);
+            window.location.href = currentUrl.toString();
+        });
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}

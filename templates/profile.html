@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Профиль — ПДД Система{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold">Профиль пользователя</h2>
+                        <p class="text-muted">{{ user.username }}</p>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-semibold">Фамилия</label>
+                                <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-semibold">Имя</label>
+                                <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-semibold">Отчество</label>
+                                <input type="text" name="patronymic" class="form-control"
+                                    value="{{ profile.patronymic|default:'' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Логин</label>
+                            <input type="text" class="form-control" value="{{ user.username }}" disabled>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Email</label>
+                            <input type="email" class="form-control" value="{{ user.email }}" disabled>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Тип пользователя</label>
+                            <input type="text" class="form-control"
+                                value="{% if profile.user_type == 'propaganda' %}Сотрудник пропаганды{% else %}Представитель организации{% endif %}"
+                                disabled>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Организация</label>
+                            <input type="text" class="form-control"
+                                value="{{ profile.organization.name|default:'Не указана' }}" disabled>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Должность</label>
+                            <input type="text" name="position" class="form-control"
+                                value="{{ profile.position|default:'' }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Контактный телефон</label>
+                            <input type="text" name="phone" class="form-control" value="{{ profile.phone|default:'' }}">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Название ЮИД-отряда</label>
+                            <input type="text" name="yuid_name" class="form-control"
+                                value="{{ profile.yuid_name|default:'' }}">
+                            <small class="text-muted">Если в вашей организации есть отряд ЮИД</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                            Сохранить изменения
+                        </button>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="text-center">
+                        <a href="{% url 'home' %}" class="text-decoration-none">Вернуться на главную</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

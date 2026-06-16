@@ -1,0 +1,117 @@
+{% extends 'admin_base.html' %}
+
+{% block admin_title %}Главная{% endblock %}
+
+{% block admin_content %}
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center" style="height: 100%;">
+            <div class="card-body">
+                <h3>{{ schools_count }}</h3>
+                <p class="text-muted small mb-0">Организаций</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center" style="height: 100%;">
+            <div class="card-body">
+                <h3>{{ users_count }}</h3>
+                <p class="text-muted small mb-0">Пользователей</p>
+                <small class="text-muted">{{ org_users }} школ / {{ propaganda_users }} ГИБДД</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center" style="height: 100%;">
+            <div class="card-body">
+                <h3>{{ events_count }}</h3>
+                <p class="text-muted small mb-0">Мероприятий</p>
+                <small class="text-muted">{{ events_planned }} заплан. / {{ events_conducted }} провед.</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center" style="height: 100%;">
+            <div class="card-body">
+                <h3>{{ accidents_count }}</h3>
+                <p class="text-muted small mb-0">ДТП</p>
+                <small class="text-muted">{{ dtp_light }} лёгких / {{ dtp_heavy }} тяж. / {{ dtp_fatal }} смерт.</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <div class="card text-center" style="height: 100%;">
+            <div class="card-body">
+                <h3 class="text-success">{{ new_events }}</h3>
+                <p class="text-muted small mb-0">Новых мероприятий за 30 дней</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-center" style="height: 100%;">
+            <div class="card-body">
+                <h3 class="text-warning">{{ new_accidents }}</h3>
+                <p class="text-muted small mb-0">Новых ДТП за 30 дней</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-center" style="height: 100%;">
+            <div class="card-body">
+                <h3 class="text-primary">{{ new_users }}</h3>
+                <p class="text-muted small mb-0">Новых пользователей за 30 дней</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <div class="card" style="height: 100%;">
+            <div class="card-header">Последние мероприятия</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Дата</th><th>Название</th><th>Организация</th><th>Статус</th></tr></thead>
+                    <tbody>
+                        {% for e in recent_events %}
+                        <tr>
+                            <td class="text-nowrap small">{{ e.date|date:"d.m.Y" }}</td>
+                            <td class="small">{{ e.title|truncatechars:30 }}</td>
+                            <td class="small">{{ e.organization.name|truncatechars:15 }}</td>
+                            <td class="small">{{ e.get_status_display }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center text-muted small">Нет мероприятий</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card" style="height: 100%;">
+            <div class="card-header">Организации с наибольшим числом мероприятий</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>Организация</th><th class="text-center">Мероприятий</th></tr></thead>
+                    <tbody>
+                        {% for s in top_schools %}
+                        <tr>
+                            <td class="small">{{ s.name|truncatechars:40 }}</td>
+                            <td class="text-center small">{{ s.event_count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="2" class="text-center text-muted small">Нет данных</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
