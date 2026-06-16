@@ -51,6 +51,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "core.wsgi.application"
 
+# Таймаут для Railway (300 секунд = 5 минут)
+import os
+RAILWAY_TIMEOUT = int(os.environ.get('RAILWAY_TIMEOUT', 300))
+
 import dj_database_url
 
 DATABASES = {
@@ -86,5 +90,6 @@ YANDEX_API_KEY = "fa135726-286c-4cb7-9e22-bc685a51a087"
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-DATA_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 100 МБ
-FILE_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 100 МБ
+# Увеличиваем таймаут для Railway
+DATA_UPLOAD_MAX_MEMORY_SIZE = 262144000  # 250 МБ
+FILE_UPLOAD_MAX_MEMORY_SIZE = 262144000
